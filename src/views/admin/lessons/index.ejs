@@ -33,7 +33,10 @@
         <option value="archived" <%= status === 'archived' ? 'selected' : '' %>>Archived</option>
       </select>
     </div>
-    <button class="btn btn-secondary" type="submit">Filter</button>
+    <button class="btn btn-primary" type="submit">Filter</button>
+    <% if (search || status) { %>
+      <a href="/admin/lessons" class="btn btn-ghost" style="height: 40px; padding: 0 1.1rem; font-size: 0.88rem; font-weight: 600; border-radius: var(--radius-pill); display: inline-flex; align-items: center; justify-content: center;">Clear</a>
+    <% } %>
   </form>
 
   <section class="section-tight">
