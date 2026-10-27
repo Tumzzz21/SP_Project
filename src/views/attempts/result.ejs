@@ -35,7 +35,7 @@
     </div>
     <div class="result-meter">
       <div class="meter" role="img" aria-label="<%= percentage %>% of questions answered correctly">
-        <span class="meter-fill" style="width: <%= percentage %>%"></span>
+        <progress class="meter-fill" value="<%= percentage %>" max="100" aria-hidden="true"></progress>
       </div>
       <p class="muted">
         Every completed attempt is kept in your history. A new attempt starts from the currently

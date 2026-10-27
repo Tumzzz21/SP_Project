@@ -34,7 +34,7 @@
       </div>
       <p class="stat-value"><%= summary.percentComplete %><span class="stat-suffix">%</span></p>
       <div class="meter" aria-label="Lesson completion" role="img" aria-valuenow="<%= summary.percentComplete %>" aria-valuemin="0" aria-valuemax="100">
-        <span class="meter-fill" style="width: <%= summary.percentComplete %>%"></span>
+        <progress class="meter-fill" value="<%= summary.percentComplete %>" max="100" aria-hidden="true"></progress>
       </div>
       <p class="muted">
         <% if (summary.remainingLessons > 0) { %>

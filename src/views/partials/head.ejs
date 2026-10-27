@@ -43,7 +43,6 @@
           <% } %>
           <a href="/learn" class="<%= activeNav === 'learn' ? 'is-active' : '' %>"<%= activeNav === 'learn' ? ' aria-current="page"' : '' %>>Learning Center</a>
           <a href="/quizzes" class="<%= activeNav === 'quizzes' ? 'is-active' : '' %>"<%= activeNav === 'quizzes' ? ' aria-current="page"' : '' %>>Quizzes</a>
-          <a href="/account" class="<%= activeNav === 'account' ? 'is-active' : '' %>"<%= activeNav === 'account' ? ' aria-current="page"' : '' %>>Account</a>
           <%
             const avatarName = String(user.displayName || user.username || user.email || '').trim();
             const avatarInitials = avatarName

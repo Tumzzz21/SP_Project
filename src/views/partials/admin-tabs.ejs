@@ -1,0 +1,19 @@
+<%
+  // Which admin section the request belongs to. Set by a middleware in
+  // routes/admin.js; the typeof guard keeps the partial renderable anywhere.
+  const tab = typeof adminTab === 'string' ? adminTab : '';
+  const tabs = [
+    { key: 'overview', label: 'Overview', href: '/admin' },
+    { key: 'lessons', label: 'Lessons', href: '/admin/lessons' },
+    { key: 'quizzes', label: 'Quizzes', href: '/admin/quizzes' },
+    { key: 'attempts', label: 'Attempt review', href: '/admin/attempts' },
+  ];
+%>
+<nav class="filter-bar" aria-label="Admin sections">
+  <% tabs.forEach(function (item) { %>
+    <a
+      class="chip<%= tab === item.key ? ' is-active' : '' %>"
+      href="<%= item.href %>"
+    <% if (tab === item.key) { %> aria-current="page"<% } %>><%= item.label %></a>
+  <% }); %>
+</nav>

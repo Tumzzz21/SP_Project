@@ -752,3 +752,58 @@ test('admin dashboard reports live student, content, and participation stats', a
   assert.match(response.text, /Manage lessons/);
   assert.match(response.text, /Attempt review/);
 });
+
+// ---------------------------------------------------------------------------
+// 7. Shared admin tab row: present on every page, one active section
+// ---------------------------------------------------------------------------
+
+const TAB_PAGES = [
+  ['/admin', '/admin'],
+  ['/admin/lessons', '/admin/lessons'],
+  ['/admin/quizzes', '/admin/quizzes'],
+  ['/admin/attempts', '/admin/attempts'],
+];
+
+/** The shared tab row markup, or null when the page does not render one. */
+function adminTabRow(html) {
+  const match = /<nav class="filter-bar" aria-label="Admin sections">([\s\S]*?)<\/nav>/.exec(html);
+  return match ? match[1] : null;
+}
+
+test('the admin tab row lists every section and marks the current one', async () => {
+  const { app, adminAuth } = setupRoles();
+
+  for (const [path, activeHref] of TAB_PAGES) {
+    const response = await request(app).get(path).set('Cookie', adminAuth.cookie);
+    assert.equal(response.status, 200, `${path} renders`);
+
+    const row = adminTabRow(response.text);
+    assert.ok(row, `${path} renders the admin tab row`);
+
+    const hrefs = [...row.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
+    assert.deepEqual(
+      hrefs,
+      ['/admin', '/admin/lessons', '/admin/quizzes', '/admin/attempts'],
+      `${path} lists all four sections in order`,
+    );
+
+    const active = [...row.matchAll(/class="chip is-active"[\s\S]*?href="([^"]+)"/g)].map((match) => match[1]);
+    assert.deepEqual(active, [activeHref], `${path} highlights exactly one section`);
+    assert.equal((row.match(/aria-current="page"/g) || []).length, 1, `${path} exposes one aria-current`);
+  }
+});
+
+test('the dashboard header no longer stacks the three section buttons', async () => {
+  const { app, adminAuth } = setupRoles();
+  const response = await request(app).get('/admin').set('Cookie', adminAuth.cookie);
+
+  assert.equal(response.status, 200);
+
+  const head = /<header class="page-head">([\s\S]*?)<\/header>/.exec(response.text);
+  assert.ok(head, 'the dashboard keeps its page header');
+  assert.ok(!head[1].includes('<a'), 'the page header carries no action links');
+
+  // the section links still exist, now provided by the tab row instead
+  const row = adminTabRow(response.text);
+  assert.ok(row, 'the tab row carries the section links');
+});

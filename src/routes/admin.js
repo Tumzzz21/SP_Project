@@ -19,6 +19,22 @@ function createAdminRoutes({ db }) {
   const router = express.Router();
   const guard = [requireActive, requireAdmin];
 
+  // Which admin section the request belongs to, so the shared tab row can
+  // highlight the current one. This router is mounted at the app root, so
+  // req.path is the full path (`/admin/lessons/3/edit`).
+  const sections = [
+    ['/admin/lessons', 'lessons'],
+    ['/admin/quizzes', 'quizzes'],
+    ['/admin/attempts', 'attempts'],
+  ];
+  router.use((req, res, next) => {
+    // This router is mounted at the app root, so skip every non-admin request.
+    if (!req.path.startsWith('/admin')) return next();
+    const match = sections.find(([prefix]) => req.path === prefix || req.path.startsWith(`${prefix}/`));
+    res.locals.adminTab = match ? match[1] : 'overview';
+    next();
+  });
+
   router.get('/admin', ...guard, (req, res) => {
     res.render('admin/index', {
       pageTitle: 'Admin | CyberSafe',
