@@ -1,0 +1,326 @@
+<%- include('../../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../../partials/flash') %>
+
+  <% if (quiz) { %>
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/admin/quizzes">Quizzes</a>
+      <span aria-hidden="true">/</span>
+      <span>v<%= quiz.version %> · <%= quiz.title %></span>
+    </nav>
+  <% } %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Admin · Quiz</p>
+      <h1><%= quiz ? `${quiz.title} (v${quiz.version})` : 'New quiz' %></h1>
+      <p class="muted">
+        <% if (!quiz) { %>
+          Create the quiz family first, then add questions to its draft.
+        <% } else if (quiz.status === 'draft') { %>
+          Draft version — editable. Publishing freezes this version permanently.
+        <% } else { %>
+          <%= quiz.status === 'published' ? 'Published version — frozen. Attempts stay pinned to it.' : 'Archived version — hidden from students, history preserved.' %>
+        <% } %>
+      </p>
+    </div>
+    <% if (quiz) { %>
+      <div class="page-head-actions">
+        <span class="badge badge-<%= quiz.status === 'published' ? 'success' : (quiz.status === 'archived' ? 'danger' : 'outline') %>"><%= quiz.status %></span>
+        <a class="btn btn-secondary btn-sm" href="/admin/quizzes/<%= quiz.id %>/preview">Student preview</a>
+        <% if (quiz.status !== 'draft') { %>
+          <form method="post" action="/admin/quizzes/<%= quiz.id %>/new-version">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn-primary btn-sm" type="submit">Create new version</button>
+          </form>
+        <% } %>
+      </div>
+    <% } %>
+  </header>
+
+  <% if (publishError) { %>
+    <div class="notice notice-warning" role="alert"><%= publishError %></div>
+  <% } %>
+
+  <% if (quiz && quiz.status !== 'draft') { %>
+    <div class="notice notice-info" role="status">
+      Published and archived versions cannot be modified — this protects every historical attempt that
+      references them. Use <strong>Create new version</strong> to copy this content into a fresh draft,
+      edit it there, and publish when ready. Students always see the newest published version.
+    </div>
+  <% } %>
+
+  <div class="split">
+    <div class="stack">
+      <!-- ---------------------------------------------------- metadata -->
+      <% if (!quiz || quiz.status === 'draft') { %>
+        <section class="panel">
+          <h2><%= quiz ? 'Quiz details' : 'Create quiz' %></h2>
+          <form method="post" action="<%= quiz ? `/admin/quizzes/${quiz.id}` : '/admin/quizzes' %>" class="form-stack" novalidate data-pending-form>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+            <div class="field<%= errors.title ? ' field-invalid' : '' %>">
+              <label class="field-label" for="title">Title</label>
+              <input id="title" name="title" type="text" value="<%= values.title %>" required minlength="3" maxlength="120"
+                aria-describedby="title-help<%= errors.title ? ' title-error' : '' %>" <%= errors.title ? 'aria-invalid="true"' : '' %>>
+              <p class="field-help" id="title-help">3–120 characters.</p>
+              <% if (errors.title) { %><p class="field-error" id="title-error"><%= errors.title %></p><% } %>
+            </div>
+
+            <div class="field<%= errors.slug ? ' field-invalid' : '' %>">
+              <label class="field-label" for="slug">Slug</label>
+              <input id="slug" name="slug" type="text" value="<%= values.slug %>" required minlength="3" maxlength="80"
+                <%= quiz ? 'readonly aria-describedby="slug-help"' : 'aria-describedby="slug-help' + (errors.slug ? ' slug-error' : '') + '"' %>
+                <%= errors.slug ? 'aria-invalid="true"' : '' %>>
+              <p class="field-help" id="slug-help">
+                <% if (quiz) { %>
+                  Fixed after creation: it groups every version of this quiz.
+                <% } else { %>
+                  URL segment for /quizzes/&lt;slug&gt;. Lowercase letters, numbers, hyphens. Must be unique.
+                <% } %>
+              </p>
+              <% if (errors.slug) { %><p class="field-error" id="slug-error"><%= errors.slug %></p><% } %>
+            </div>
+
+            <div class="field<%= errors.description ? ' field-invalid' : '' %>">
+              <label class="field-label" for="description">Description</label>
+              <textarea id="description" name="description" rows="2" maxlength="300"
+                aria-describedby="description-help<%= errors.description ? ' description-error' : '' %>"><%= values.description %></textarea>
+              <p class="field-help" id="description-help">Up to 300 characters. Shown on the quiz card.</p>
+              <% if (errors.description) { %><p class="field-error" id="description-error"><%= errors.description %></p><% } %>
+            </div>
+
+            <div class="field<%= errors.passingScorePercent ? ' field-invalid' : '' %>">
+              <label class="field-label" for="passingScorePercent">Passing score (%)</label>
+              <input id="passingScorePercent" name="passingScorePercent" type="number" min="0" max="100" value="<%= values.passingScorePercent %>"
+                aria-describedby="passingScorePercent-help<%= errors.passingScorePercent ? ' passingScorePercent-error' : '' %>">
+              <p class="field-help" id="passingScorePercent-help">Whole number 0–100, shown to students as the target.</p>
+              <% if (errors.passingScorePercent) { %><p class="field-error" id="passingScorePercent-error"><%= errors.passingScorePercent %></p><% } %>
+            </div>
+
+            <button class="btn btn-primary" type="submit"><%= quiz ? 'Save details' : 'Create draft quiz' %></button>
+          </form>
+        </section>
+      <% } else { %>
+        <section class="panel">
+          <h2>Quiz details (read-only)</h2>
+          <dl class="detail-list">
+            <div><dt>Title</dt><dd><%= quiz.title %></dd></div>
+            <div><dt>Slug</dt><dd><%= quiz.slug %></dd></div>
+            <div><dt>Description</dt><dd><%= quiz.description || '—' %></dd></div>
+            <div><dt>Passing score</dt><dd><%= quiz.passingScorePercent %>%</dd></div>
+          </dl>
+        </section>
+      <% } %>
+
+      <!-- --------------------------------------------------- questions -->
+      <% if (quiz && quiz.status === 'draft') { %>
+        <section class="panel">
+          <div class="section-head section-head-inline">
+            <h2>Questions</h2>
+            <span class="muted">Draft — saved answers stay hidden from students until you publish.</span>
+          </div>
+
+          <form method="post" action="/admin/quizzes/<%= quiz.id %>/questions" class="form-stack q-editor" novalidate data-pending-form>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+            <% if (blocks.length === 0) { %>
+              <p class="muted" data-q-empty>No questions yet. Add the first one below.</p>
+            <% } %>
+
+            <% blocks.forEach(function (block, i) { %>
+              <fieldset class="q-block" data-q-block>
+                <legend class="q-legend">Question <span data-q-number><%= i + 1 %></span></legend>
+
+                <div class="field">
+                  <label class="field-label" for="q_<%= i %>_prompt">Prompt</label>
+                  <textarea id="q_<%= i %>_prompt" name="q_<%= i %>_prompt" rows="2" maxlength="500"
+                    data-q-field="prompt" required><%= block.prompt %></textarea>
+                </div>
+
+                <div class="opt-list" data-q-options>
+                  <% block.optionLabels.forEach(function (label, j) { %>
+                    <% if (label !== '' || j < 2) { %>
+                      <div class="opt-row" data-q-option>
+                        <input
+                          type="radio"
+                          id="q_<%= i %>_correct_<%= j %>"
+                          name="q_<%= i %>_correct"
+                          value="<%= j %>"
+                          <%= block.correctSlot === j ? 'checked' : '' %>
+                          data-q-correct
+                          aria-label="Mark option <%= j + 1 %> correct"
+                        >
+                        <label class="sr-only" for="q_<%= i %>_opt_<%= j %>">Option <%= j + 1 %></label>
+                        <input
+                          id="q_<%= i %>_opt_<%= j %>"
+                          name="q_<%= i %>_opt_<%= j %>"
+                          type="text"
+                          maxlength="160"
+                          value="<%= label %>"
+                          placeholder="Option <%= j + 1 %>"
+                          data-q-option-label
+                        >
+                        <% if (j >= 2) { %>
+                          <button class="btn btn-ghost btn-sm" type="button" data-q-remove-option>Remove</button>
+                        <% } %>
+                      </div>
+                    <% } %>
+                  <% }); %>
+                </div>
+
+                <div class="q-actions">
+                  <button class="btn btn-ghost btn-sm" type="button" data-q-add-option>Add option</button>
+                  <button class="btn btn-ghost btn-sm" type="button" data-q-move-up>Move up</button>
+                  <button class="btn btn-ghost btn-sm" type="button" data-q-move-down>Move down</button>
+                  <button class="btn btn-ghost btn-sm" type="button" data-q-remove>Remove question</button>
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="q_<%= i %>_explanation">Explanation (shown after submission)</label>
+                  <textarea id="q_<%= i %>_explanation" name="q_<%= i %>_explanation" rows="2" maxlength="500"
+                    data-q-field="explanation" aria-describedby="q_<%= i %>_exp_help"><%= block.explanation %></textarea>
+                  <p class="field-help" id="q_<%= i %>_exp_help">Why the correct answer is right. Optional but encouraged.</p>
+                </div>
+              </fieldset>
+            <% }); %>
+
+            <div class="q-actions">
+              <button class="btn btn-secondary" type="button" data-q-add>Add question</button>
+            </div>
+
+            <button class="btn btn-primary" type="submit">Save questions</button>
+          </form>
+        </section>
+      <% } else if (quiz) { %>
+        <section class="panel">
+          <div class="section-head section-head-inline">
+            <h2>Questions (frozen)</h2>
+            <a class="link-arrow" href="/admin/quizzes/<%= quiz.id %>/preview">Student preview</a>
+          </div>
+          <% if (questions.length === 0) { %>
+            <div class="empty-state">
+              <h3>No questions in this version</h3>
+              <p class="muted">This version has no questions — students cannot attempt it.</p>
+            </div>
+          <% } else { %>
+            <ol class="q-static-list">
+              <% questions.forEach(function (question, i) { %>
+                <li class="q-static-item">
+                  <p class="question-prompt"><span class="question-number"><%= i + 1 %></span> <%= question.prompt %></p>
+                  <ul class="option-list">
+                    <% question.options.forEach(function (option) { %>
+                      <li class="option">
+                        <span class="option-marker<%= option.isCorrect ? ' option-marker-correct' : '' %>"><%= option.isCorrect ? '✓' : '·' %></span>
+                        <span><%= option.label %><% if (option.isCorrect) { %> <span class="badge badge-success">correct</span><% } %></span>
+                      </li>
+                    <% }); %>
+                  </ul>
+                  <% if (question.explanation) { %>
+                    <p class="muted small">Explanation: <%= question.explanation %></p>
+                  <% } %>
+                </li>
+              <% }); %>
+            </ol>
+          <% } %>
+        </section>
+      <% } %>
+    </div>
+
+    <!-- ------------------------------------------------------ sidebar -->
+    <div class="stack">
+      <% if (quiz) { %>
+        <section class="panel panel-muted">
+          <h2>Version facts</h2>
+          <dl class="detail-list">
+            <div><dt>Version</dt><dd>v<%= quiz.version %></dd></div>
+            <div><dt>Status</dt><dd><span class="badge badge-<%= quiz.status === 'published' ? 'success' : (quiz.status === 'archived' ? 'danger' : 'outline') %>"><%= quiz.status %></span></dd></div>
+            <div><dt>Questions</dt><dd><%= questions.length %></dd></div>
+            <div><dt>Created</dt><dd><%= formatDate(quiz.createdAt) %></dd></div>
+            <div><dt>Published</dt><dd><%= quiz.publishedAt ? formatDate(quiz.publishedAt) : '—' %></dd></div>
+          </dl>
+        </section>
+
+        <% if (quiz.status === 'draft') { %>
+          <section class="panel panel-muted">
+            <h2>Publish</h2>
+            <p class="muted small">
+              Publishing validates the answer key (at least two options and exactly one correct answer
+              per question), then freezes this version permanently.
+            </p>
+            <form method="post" action="/admin/quizzes/<%= quiz.id %>/publish">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-primary btn-block" type="submit">Publish this version</button>
+            </form>
+            <form method="post" action="/admin/quizzes/<%= quiz.id %>/archive">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-secondary btn-block" type="submit">Archive without publishing</button>
+            </form>
+          </section>
+        <% } else if (quiz.status === 'published') { %>
+          <section class="panel panel-muted">
+            <h2>Retire</h2>
+            <p class="muted small">
+              Archiving hides this version from new attempts. Existing attempt history keeps referencing it.
+            </p>
+            <form method="post" action="/admin/quizzes/<%= quiz.id %>/archive">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-secondary btn-block" type="submit">Archive this version</button>
+            </form>
+          </section>
+        <% } else { %>
+          <section class="panel panel-muted">
+            <h2>Archived</h2>
+            <p class="muted small">This version is retired. Create a new version to revise the content.</p>
+          </section>
+        <% } %>
+      <% } else { %>
+        <section class="panel panel-muted">
+          <h2>How versioning works</h2>
+          <ul class="roadmap">
+            <li>Each quiz is a family of versions under one slug.</li>
+            <li>Drafts are editable; publishing freezes a version forever.</li>
+            <li>To change a published quiz, create a new version from it.</li>
+            <li>Old attempts always keep the exact version they answered.</li>
+          </ul>
+        </section>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<template id="q-template">
+  <fieldset class="q-block" data-q-block>
+    <legend class="q-legend">Question <span data-q-number>1</span></legend>
+    <div class="field">
+      <label class="field-label">Prompt</label>
+      <textarea rows="2" maxlength="500" data-q-field="prompt" required></textarea>
+    </div>
+    <div class="opt-list" data-q-options>
+      <div class="opt-row" data-q-option>
+        <input type="radio" value="0" checked data-q-correct aria-label="Mark option 1 correct">
+        <input type="text" maxlength="160" placeholder="Option 1" data-q-option-label>
+      </div>
+      <div class="opt-row" data-q-option>
+        <input type="radio" value="1" data-q-correct aria-label="Mark option 2 correct">
+        <input type="text" maxlength="160" placeholder="Option 2" data-q-option-label>
+        <button class="btn btn-ghost btn-sm" type="button" data-q-remove-option>Remove</button>
+      </div>
+    </div>
+    <div class="q-actions">
+      <button class="btn btn-ghost btn-sm" type="button" data-q-add-option>Add option</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-q-move-up>Move up</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-q-move-down>Move down</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-q-remove>Remove question</button>
+    </div>
+    <div class="field">
+      <label class="field-label">Explanation (shown after submission)</label>
+      <textarea rows="2" maxlength="500" data-q-field="explanation"></textarea>
+      <p class="field-help">Why the correct answer is right. Optional but encouraged.</p>
+    </div>
+  </fieldset>
+</template>
+
+<script src="/js/admin-quiz.js" defer></script>
+<%- include('../../partials/footer') %>

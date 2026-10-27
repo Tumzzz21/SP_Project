@@ -1,0 +1,107 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Your quizzes</p>
+      <h1>Attempt history</h1>
+      <p class="muted">
+        Every completed attempt is kept. Results are tied to the quiz version you took, so later
+        edits do not rewrite the past.
+      </p>
+    </div>
+    <div class="page-head-actions">
+      <a class="btn btn-secondary" href="/quizzes">Browse quizzes</a>
+    </div>
+  </header>
+
+  <section class="stat-grid" aria-label="Quiz summary">
+    <div class="stat-card">
+      <p class="stat-label">Completed attempts</p>
+      <p class="stat-value"><%= summary.completedAttempts %></p>
+      <p class="muted">Submitted attempts across every quiz you have taken.</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Quizzes attempted</p>
+      <p class="stat-value"><%= summary.quizzesAttempted %></p>
+      <p class="muted">Distinct quizzes with at least one completed attempt.</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Best score</p>
+      <p class="stat-value">
+        <% if (summary.bestPercentage === null) { %>—<% } else { %><%= summary.bestPercentage %><span class="stat-suffix">%</span><% } %>
+      </p>
+      <p class="muted">
+        <% if (summary.lastAttemptAt) { %>
+          Last record <%= formatDateTime(summary.lastAttemptAt) %>.
+        <% } else { %>
+          No completed attempt yet.
+        <% } %>
+      </p>
+    </div>
+  </section>
+
+  <% if (history.length === 0) { %>
+    <div class="empty-state">
+      <h3>No quiz attempts yet</h3>
+      <p class="muted">
+        Start a quiz from the catalogue. Your score, the questions you saw, and the explanations
+        will be available here afterwards.
+      </p>
+      <a class="btn btn-primary" href="/quizzes">Open the quiz catalogue</a>
+    </div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data-table history-table">
+        <caption class="sr-only">Your quiz attempts, newest first</caption>
+        <thead>
+          <tr>
+            <th scope="col">Quiz</th>
+            <th scope="col">Version</th>
+            <th scope="col">When</th>
+            <th scope="col">Score</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="sr-only">Review</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% history.forEach(function (entry) { %>
+            <tr>
+              <td>
+                <%= entry.title %>
+                <% if (entry.isLatest) { %><span class="badge badge-outline">Latest</span><% } %>
+                <% if (entry.isBest) { %><span class="badge badge-success">Best</span><% } %>
+              </td>
+              <td><%= entry.version %></td>
+              <td><%= formatDateTime(entry.submittedAt || entry.startedAt) %></td>
+              <td>
+                <% if (entry.status === 'submitted') { %>
+                  <%= entry.scorePoints %>/<%= entry.maxPoints %>
+                  <span class="muted">(<%= entry.percentage %>%)</span>
+                <% } else { %>
+                  <span class="muted">—</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (entry.status === 'submitted') { %>
+                  <span class="badge badge-success">Completed</span>
+                <% } else { %>
+                  <span class="badge badge-warning">Expired</span>
+                <% } %>
+              </td>
+              <td>
+                <a class="link-arrow" href="/attempts/<%= entry.id %>">
+                  <%= entry.status === 'submitted' ? 'Review' : 'Details' %> <span aria-hidden="true">→</span>
+                </a>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</main>
+
+<%- include('../partials/footer') %>

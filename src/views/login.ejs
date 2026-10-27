@@ -1,0 +1,118 @@
+<%- include('partials/head') %>
+
+<main id="main" class="auth-shell">
+  <div class="auth-card">
+    <p class="eyebrow"><%= adminMode ? 'Administrator access' : 'Student access' %></p>
+    <h1>Sign in to CyberSafe</h1>
+    <p class="muted auth-intro">
+      <% if (adminMode) { %>
+        Administrators use the same sign-in as students. Your role comes from
+        your account, not from this page.
+      <% } else if (googleConfigured) { %>
+        Use your CyberSafe email and password, or continue with Google.
+      <% } else { %>
+        Use your CyberSafe email and password to continue.
+      <% } %>
+    </p>
+
+    <%- include('partials/flash') %>
+
+    <form method="post" action="/auth/login" class="form-stack auth-form" data-pending-form novalidate>
+      <input type="hidden" name="next" value="<%= next %>">
+      <input type="hidden" name="adminMode" value="<%= adminMode ? '1' : '' %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>">
+
+      <label class="field<%= errors.email ? ' field-invalid' : '' %>">
+        <span class="field-label">Email Address</span>
+        <input
+          type="email"
+          name="email"
+          value="<%= values.email %>"
+          placeholder="e.g. your.email@example.com"
+          autocomplete="email"
+          maxlength="254"
+          required
+          autofocus
+          aria-describedby="<%= errors.email ? 'login-email-error' : 'login-email-help' %>"
+        >
+        <% if (errors.email) { %>
+          <span class="field-error" id="login-email-error"><%= errors.email %></span>
+        <% } else { %>
+          <span class="field-help" id="login-email-help" hidden>The email you registered with.</span>
+        <% } %>
+      </label>
+
+      <div class="field<%= errors.password ? ' field-invalid' : '' %>">
+        <div class="field-label-row">
+          <label class="field-label" for="login-password">Password</label>
+          <a class="auth-link" href="/forgot-password">Forgot Password?</a>
+        </div>
+        <div class="password-wrap">
+          <input
+            id="login-password"
+            type="password"
+            name="password"
+            autocomplete="current-password"
+            maxlength="200"
+            required
+            aria-describedby="<%= errors.password ? 'login-password-error' : undefined %>"
+          >
+          <button
+            type="button"
+            class="password-toggle"
+            data-toggle-password="login-password"
+            aria-label="Show password"
+            aria-pressed="false"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M12 5c-5 0-8.7 3.6-10 7 1.3 3.4 5 7 10 7s8.7-3.6 10-7c-1.3-3.4-5-7-10-7zm0 11.5A4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 0 1 0 9zm0-2a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
+            </svg>
+          </button>
+        </div>
+        <% if (errors.password) { %>
+          <span class="field-error" id="login-password-error"><%= errors.password %></span>
+        <% } %>
+      </div>
+
+      <button class="btn btn-dark btn-block" type="submit">Sign In</button>
+    </form>
+
+    <% if (googleConfigured) { %>
+      <div class="auth-divider" role="separator" aria-label="or continue with"><span>or</span></div>
+
+      <a class="btn btn-google btn-block" href="/auth/google/start<%= next ? '?next=' + encodeURIComponent(next) : '' %>">
+        <svg class="google-mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.4a5.5 5.5 0 0 1-2.4 3.6v3h3.9c2.3-2.1 3.6-5.2 3.6-8.8z"/>
+          <path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.9-3c-1 .7-2.3 1.1-4 1.1a7 7 0 0 1-6.6-4.8H1.4v3.1A12 12 0 0 0 12 24z"/>
+          <path fill="#FBBC05" d="M5.4 14.4a7.2 7.2 0 0 1 0-4.8V6.5H1.4a12 12 0 0 0 0 11l4-3.1z"/>
+          <path fill="#EA4335" d="M12 4.8c1.8 0 3.4.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.4 6.5l4 3.1A7 7 0 0 1 12 4.8z"/>
+        </svg>
+        Continue with Google
+      </a>
+      <p class="fine-print">
+        You will be redirected to Google, then returned here. Signing in creates a CyberSafe
+        account the first time and reuses it afterwards.
+      </p>
+    <% } %>
+
+    <p class="auth-footer auth-links">
+      <% if (!adminMode) { %>
+        <span class="auth-links-row">
+          Don't have an account?
+          <a class="auth-link" href="/register">Sign up</a>
+        </span>
+      <% } else { %>
+        <span class="auth-links-row">
+          Here as a student?
+          <a class="auth-link" href="/login">Student sign in</a>
+        </span>
+      <% } %>
+      <a class="auth-link auth-link-subtle" href="/admin-login">
+        Administrator access? (Separate login)
+      </a>
+    </p>
+  </div>
+</main>
+
+<script src="/js/auth.js" defer></script>
+<%- include('partials/footer') %>

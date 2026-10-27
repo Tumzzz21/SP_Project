@@ -1,0 +1,55 @@
+<%- include('../../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../../partials/flash') %>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/admin/quizzes">Quizzes</a>
+    <span aria-hidden="true">/</span>
+    <a href="/admin/quizzes/<%= quiz.id %>"><%= quiz.title %> v<%= quiz.version %></a>
+    <span aria-hidden="true">/</span>
+    <span>Preview</span>
+  </nav>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Admin preview · Version <%= quiz.version %> · Pass at <%= quiz.passingScorePercent %>%</p>
+      <h1><%= quiz.title %></h1>
+      <p class="muted"><%= quiz.description || 'No description.' %></p>
+    </div>
+    <div class="page-head-actions">
+      <span class="badge badge-<%= quiz.status === 'published' ? 'success' : (quiz.status === 'archived' ? 'danger' : 'outline') %>"><%= quiz.status %></span>
+      <a class="btn btn-secondary btn-sm" href="/admin/quizzes/<%= quiz.id %>">Back to edit</a>
+    </div>
+  </header>
+
+  <div class="notice notice-info" role="status">
+    This is exactly what students see: answer choices only. Correct answers and explanations are never
+    sent to the browser before an attempt is submitted — check the edit page for the answer key.
+  </div>
+
+  <% if (questions.length === 0) { %>
+    <div class="empty-state">
+      <h3>No questions yet</h3>
+      <p class="muted">This version has no questions. Add some on the edit page.</p>
+    </div>
+  <% } else { %>
+    <ol class="question-list">
+      <% questions.forEach(function (question, i) { %>
+        <li class="question-card">
+          <p class="question-prompt"><span class="question-number"><%= i + 1 %></span> <%= question.prompt %></p>
+          <ul class="option-list">
+            <% question.options.forEach(function (option) { %>
+              <li class="option">
+                <span class="option-marker" aria-hidden="true">·</span>
+                <span><%= option.label %></span>
+              </li>
+            <% }); %>
+          </ul>
+        </li>
+      <% }); %>
+    </ol>
+  <% } %>
+</main>
+
+<%- include('../../partials/footer') %>

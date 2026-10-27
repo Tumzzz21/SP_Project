@@ -1,0 +1,94 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="shell page lesson-page">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/learn">Learning Center</a>
+    <span aria-hidden="true">/</span>
+    <% if (category) { %>
+      <a href="/learn?category=<%= category.key %>"><%= category.short %></a>
+      <span aria-hidden="true">/</span>
+    <% } %>
+    <span aria-current="page"><%= lesson.title %></span>
+  </nav>
+
+  <%- include('../partials/flash') %>
+
+  <article class="lesson-article">
+    <header class="article-head">
+      <span class="badge"><%= category ? category.label : lesson.category %></span>
+      <h1><%= lesson.title %></h1>
+      <p class="lead"><%= lesson.summary %></p>
+      <p class="muted article-meta">
+        <%= lesson.readingMinutes %> minute read
+        <span aria-hidden="true">·</span>
+        Published <%= formatDate(lesson.publishedAt) %>
+        <span aria-hidden="true">·</span>
+        <%= progress && progress.state === 'completed' ? 'Completed' : 'Not yet marked complete' %>
+      </p>
+    </header>
+
+    <div class="article-body">
+      <%- lessonHtml %>
+    </div>
+
+    <footer class="article-footer">
+      <% if (user.role === 'student') { %>
+        <div class="completion-panel">
+          <% if (progress && progress.state === 'completed') { %>
+            <div>
+              <p><strong>You marked this lesson complete.</strong></p>
+              <p class="muted">
+                Recorded <%= formatDateTime(progress.completedAt) %>. This records that you finished
+                reading; it is not a test of mastery. You can undo it at any time.
+              </p>
+            </div>
+            <form method="post" action="/learn/<%= lesson.slug %>/reopen" data-pending-form>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-secondary" type="submit">Mark as not completed</button>
+            </form>
+          <% } else { %>
+            <div>
+              <p><strong>Finished reading?</strong></p>
+              <p class="muted">
+                Marking complete saves progress to your account. It is a progress record, not proof
+                that you have mastered the topic.
+              </p>
+            </div>
+            <form method="post" action="/learn/<%= lesson.slug %>/complete" data-pending-form>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-primary" type="submit">Mark lesson complete</button>
+            </form>
+          <% } %>
+        </div>
+      <% } else { %>
+        <div class="notice">
+          <p><strong>Administrator view.</strong></p>
+          <p class="muted">Lesson completion is recorded per student account and is not available to administrators.</p>
+        </div>
+      <% } %>
+      <a class="btn btn-secondary" href="/learn">Back to Learning Center</a>
+    </footer>
+  </article>
+
+  <% if (related.length > 0) { %>
+    <section class="section-tight">
+      <div class="section-head">
+        <h2>More in <%= category ? category.label : 'this topic' %></h2>
+      </div>
+      <ul class="lesson-grid">
+        <% related.forEach(function (item) { %>
+          <li class="lesson-card">
+            <div class="lesson-meta">
+              <span class="badge"><%= item.category %></span>
+              <span class="muted"><%= item.readingMinutes %> min read</span>
+            </div>
+            <h3><a href="/learn/<%= item.slug %>"><%= item.title %></a></h3>
+            <p class="muted"><%= item.summary %></p>
+          </li>
+        <% }); %>
+      </ul>
+    </section>
+  <% } %>
+</main>
+
+<%- include('../partials/footer') %>

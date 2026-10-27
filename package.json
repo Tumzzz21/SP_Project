@@ -1,0 +1,32 @@
+{
+  "name": "cybersafe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CyberSafe - a cybersecurity awareness website for students (BSIT capstone project)",
+  "main": "src/server.js",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed.js",
+    "create-admin": "node scripts/promote-admin.js",
+    "setup-test-accounts": "node scripts/setup-test-accounts.js",
+    "test": "node --test \"tests/**/*.test.js\""
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^18.0.8",
+    "ejs": "^3.1.10",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "jose": "^6.2.13"
+  },
+  "devDependencies": {
+    "supertest": "^7.3.1"
+  }
+}

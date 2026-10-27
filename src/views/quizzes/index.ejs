@@ -1,0 +1,74 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Quizzes</p>
+      <h1><%= adminView ? 'Quiz catalogue' : 'Check what you have learned' %></h1>
+      <p class="muted">
+        <%= adminView
+          ? 'Published quiz versions as students see them. Editing tools arrive in Phase 4.'
+          : 'Short checks with server-side grading and explanations after you submit.' %>
+      </p>
+    </div>
+    <% if (!adminView) { %>
+      <div class="page-head-actions">
+        <a class="btn btn-secondary" href="/quizzes/history">Your quiz history</a>
+      </div>
+    <% } %>
+  </header>
+
+  <% if (!adminView) { %>
+    <div class="notice notice-info">
+      <p><strong>How attempts work.</strong></p>
+      <p class="muted">
+        An attempt is pinned to the published version you started, so later edits to a quiz cannot
+        change your old results. You can review every completed attempt. Quiz history is only visible
+        to you.
+      </p>
+    </div>
+  <% } %>
+
+  <% if (quizzes.length === 0) { %>
+    <div class="empty-state">
+      <h3>No quizzes are published yet</h3>
+      <p class="muted">Published quizzes appear here once they are added on the server.</p>
+    </div>
+  <% } else { %>
+    <ul class="lesson-grid">
+      <% quizzes.forEach(function (quiz) { %>
+        <li class="lesson-card">
+          <div class="lesson-meta">
+            <span class="badge"><%= quiz.status %></span>
+            <span class="muted">Version <%= quiz.version %></span>
+          </div>
+          <h3><a href="/quizzes/<%= quiz.slug %>"><%= quiz.title %></a></h3>
+          <p class="muted"><%= quiz.description %></p>
+          <div class="lesson-footer">
+            <% if (adminView) { %>
+              <span class="muted"><%= counts.get(quiz.id) || 0 %> question<%= (counts.get(quiz.id) || 0) === 1 ? '' : 's' %> · pass mark <%= quiz.passingScorePercent %>%</span>
+              <a class="link-arrow" href="/quizzes/<%= quiz.slug %>">Preview <span aria-hidden="true">→</span></a>
+            <% } else { %>
+              <span class="muted">
+                <%= quiz.questionCount %> question<%= quiz.questionCount === 1 ? '' : 's' %>
+                <% if (quiz.bestPercentage !== null) { %>
+                  · best <%= quiz.bestPercentage %>%
+                <% } else if (quiz.attempts > 0) { %>
+                  · no completed attempt
+                <% } %>
+              </span>
+              <a class="link-arrow" href="/quizzes/<%= quiz.slug %>">
+                <%= quiz.openAttemptId ? 'Resume' : quiz.attempts > 0 ? 'Try again' : 'Start' %>
+                <span aria-hidden="true">→</span>
+              </a>
+            <% } %>
+          </div>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+</main>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= pageTitle %></title>
+  <meta name="description" content="CyberSafe is a cybersecurity awareness website that helps students recognise phishing, build stronger passwords, avoid online scams, protect personal data, and use the internet responsibly.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="<%= bodyClass %>">
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="<%= user ? (user.role === 'admin' ? '/admin' : '/dashboard') : '/' %>">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l7 3v6c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V6l7-3z"/>
+            <path d="M9 12.2l2.1 2.1L15 10.6"/>
+          </svg>
+        </span>
+        <span class="brand-name">CyberSafe</span>
+      </a>
+
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+        <span class="sr-only">Toggle navigation</span>
+      </button>
+
+      <nav class="primary-nav" id="primary-nav" aria-label="Primary">
+        <% if (!user) { %>
+          <a href="/#topics">Topics</a>
+          <a href="/#how-it-works">How it works</a>
+          <a class="nav-cta" href="/login">Sign in</a>
+        <% } else { %>
+          <% if (user.role === 'admin') { %>
+            <a href="/admin" class="<%= activeNav === 'admin' ? 'is-active' : '' %>"<%= activeNav === 'admin' ? ' aria-current="page"' : '' %>>Admin</a>
+          <% } else { %>
+            <a href="/dashboard" class="<%= activeNav === 'dashboard' ? 'is-active' : '' %>"<%= activeNav === 'dashboard' ? ' aria-current="page"' : '' %>>Dashboard</a>
+          <% } %>
+          <a href="/learn" class="<%= activeNav === 'learn' ? 'is-active' : '' %>"<%= activeNav === 'learn' ? ' aria-current="page"' : '' %>>Learning Center</a>
+          <a href="/quizzes" class="<%= activeNav === 'quizzes' ? 'is-active' : '' %>"<%= activeNav === 'quizzes' ? ' aria-current="page"' : '' %>>Quizzes</a>
+          <a href="/account" class="<%= activeNav === 'account' ? 'is-active' : '' %>"<%= activeNav === 'account' ? ' aria-current="page"' : '' %>>Account</a>
+          <%
+            const avatarName = String(user.displayName || user.username || user.email || '').trim();
+            const avatarInitials = avatarName
+              ? avatarName.split(/\s+/).slice(0, 2).map(function (part) { return part.charAt(0); }).join('').toUpperCase()
+              : '?';
+          %>
+          <div class="nav-user" data-user-menu>
+            <button
+              class="nav-avatar"
+              type="button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-controls="nav-user-panel"
+              data-user-menu-toggle
+              title="<%= avatarName %>"
+            >
+              <span aria-hidden="true"><%= avatarInitials %></span>
+              <span class="sr-only">Account menu for <%= avatarName %></span>
+            </button>
+
+            <div class="nav-user-panel" id="nav-user-panel" data-user-menu-panel hidden>
+              <div class="nav-user-head">
+                <p class="nav-user-name"><%= user.displayName %></p>
+                <p class="nav-user-email"><%= user.email %></p>
+              </div>
+              <div class="nav-user-divider" role="separator"></div>
+              <a class="nav-user-item" href="/account">
+                <%- include('icon', { name: 'settings', size: 16 }) %>
+                <span>Account Settings</span>
+              </a>
+              <form method="post" action="/auth/logout" class="nav-user-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="nav-user-item nav-user-signout" type="submit">
+                  <%- include('icon', { name: 'signOut', size: 16 }) %>
+                  <span>Sign Out</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        <% } %>
+      </nav>
+    </div>
+  </header>
+

@@ -1,0 +1,84 @@
+<%- include('../../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../../partials/flash') %>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/admin/attempts">Attempt review</a>
+    <span aria-hidden="true">/</span>
+    <span>Attempt #<%= attempt.id %></span>
+  </nav>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Admin · Attempt #<%= attempt.id %></p>
+      <h1><%= attempt.studentName || 'Unnamed student' %> · <%= attempt.title %> v<%= attempt.version %></h1>
+      <p class="muted"><%= attempt.studentEmail %><% if (attempt.studentUsername) { %> · @<%= attempt.studentUsername %><% } %></p>
+    </div>
+    <div class="page-head-actions">
+      <span class="badge badge-<%= attempt.status === 'submitted' ? 'success' : 'warning' %>"><%= attempt.status %></span>
+      <a class="btn btn-secondary btn-sm" href="/admin/attempts">Back to list</a>
+    </div>
+  </header>
+
+  <div class="notice notice-info" role="status">
+    Read-only record. Scores are computed at submission by the server and locked by the database —
+    they cannot be edited from here.
+  </div>
+
+  <section class="result-summary panel" aria-label="Attempt summary">
+    <% if (attempt.status === 'submitted') { %>
+      <div>
+        <p class="stat-label">Score</p>
+        <p class="result-score"><%= attempt.scorePoints %>/<%= attempt.maxPoints %> <span class="stat-suffix">(<%= percentage %>% of <%= attempt.passingScorePercent %>% to pass)</span></p>
+        <div class="meter" aria-hidden="true"><div class="meter-fill" style="width: <%= percentage %>%"></div></div>
+      </div>
+    <% } else { %>
+      <div>
+        <p class="stat-label">Score</p>
+        <p class="result-score">Not graded <span class="stat-suffix">(<%= attempt.status %>)</span></p>
+        <p class="muted small">Expired attempts were never submitted, so no answers or score were stored.</p>
+      </div>
+    <% } %>
+    <dl class="detail-list">
+      <div><dt>Started</dt><dd><%= formatDateTime(attempt.startedAt) %></dd></div>
+      <div><dt>Submitted</dt><dd><%= attempt.submittedAt ? formatDateTime(attempt.submittedAt) : '—' %></dd></div>
+      <div><dt>Quiz version</dt><dd><%= attempt.title %> v<%= attempt.version %></dd></div>
+    </dl>
+  </section>
+
+  <% if (answers.length === 0) { %>
+    <div class="empty-state">
+      <h3>No answers recorded</h3>
+      <p class="muted"><%= attempt.status === 'submitted' ? 'This attempt has no stored answers.' : 'Answers are stored only when an attempt is submitted before it expires.' %></p>
+    </div>
+  <% } else { %>
+    <ol class="review-list section-tight">
+      <% answers.forEach(function (answer, i) { %>
+        <li class="review-card">
+          <div class="review-head">
+            <p class="question-prompt"><span class="question-number"><%= i + 1 %></span> <%= answer.prompt %></p>
+            <span class="badge <%= answer.isCorrect === null ? 'badge-warning' : (answer.isCorrect ? 'badge-success' : 'badge-danger') %>">
+              <%= answer.isCorrect === null ? 'unanswered' : (answer.isCorrect ? 'correct' : 'incorrect') %>
+            </span>
+          </div>
+          <dl class="answer-compare">
+            <div>
+              <dt>Selected answer</dt>
+              <dd><%= answer.selectedLabel || '— (no answer selected)' %></dd>
+            </div>
+            <div>
+              <dt>Correct answer</dt>
+              <dd><%= answer.correctLabel || '—' %></dd>
+            </div>
+          </dl>
+          <% if (answer.explanation) { %>
+            <p class="explanation">Why: <%= answer.explanation %></p>
+          <% } %>
+        </li>
+      <% }); %>
+    </ol>
+  <% } %>
+</main>
+
+<%- include('../../partials/footer') %>

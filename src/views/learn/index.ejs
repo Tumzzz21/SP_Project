@@ -1,0 +1,82 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Learning Center</p>
+      <h1>Lessons by topic</h1>
+      <p class="muted">Short, accurate explanations. Start anywhere — every track stands on its own.</p>
+    </div>
+  </header>
+
+  <section class="progress-banner">
+    <div class="progress-banner-text">
+      <p class="eyebrow">Your progress</p>
+      <p class="progress-banner-value">
+        <%= summary.completedLessons %> of <%= summary.publishedLessons %>
+        lesson<%= summary.publishedLessons === 1 ? '' : 's' %> complete
+        <span class="muted">(<%= summary.percentComplete %>%)</span>
+      </p>
+      <div class="meter" role="img" aria-label="<%= summary.percentComplete %>% of published lessons completed">
+        <span class="meter-fill" style="width: <%= summary.percentComplete %>%"></span>
+      </div>
+    </div>
+    <% if (nextLesson) { %>
+      <a class="btn btn-secondary" href="/learn/<%= nextLesson.slug %>">
+        Continue: <%= nextLesson.title %>
+      </a>
+    <% } else if (summary.publishedLessons > 0) { %>
+      <span class="badge badge-success">All published lessons complete</span>
+    <% } %>
+  </section>
+
+  <nav class="filter-bar" aria-label="Filter lessons by topic">
+    <a class="chip<%= !activeCategory ? ' is-active' : '' %>" href="/learn">All topics</a>
+    <% categories.forEach(function (category) { %>
+      <a class="chip<%= activeCategory === category.key ? ' is-active' : '' %>" href="/learn?category=<%= category.key %>">
+        <%= category.short %>
+      </a>
+    <% }); %>
+  </nav>
+
+  <% if (activeCategory) { %>
+    <% const active = categories.find(function (item) { return item.key === activeCategory; }); %>
+    <p class="filter-summary muted"><%= active ? active.description : '' %></p>
+  <% } %>
+
+  <% if (lessons.length === 0) { %>
+    <div class="empty-state">
+      <h3><%= activeCategory ? 'No published lessons in this topic yet' : 'No lessons are published yet' %></h3>
+      <p class="muted">
+        <%= activeCategory ? 'Try another topic, or browse all lessons.' : 'Lessons appear here once an administrator publishes them.' %>
+      </p>
+      <% if (activeCategory) { %>
+        <a class="btn btn-secondary" href="/learn">Browse all topics</a>
+      <% } %>
+    </div>
+  <% } else { %>
+    <ul class="lesson-grid">
+      <% lessons.forEach(function (lesson) { %>
+        <% const entry = progress.get(lesson.id); %>
+        <li class="lesson-card">
+          <div class="lesson-meta">
+            <span class="badge"><%= lesson.category %></span>
+            <span class="muted"><%= lesson.readingMinutes %> min read</span>
+          </div>
+          <h3><a href="/learn/<%= lesson.slug %>"><%= lesson.title %></a></h3>
+          <p class="muted"><%= lesson.summary %></p>
+          <div class="lesson-footer">
+            <span class="status-dot status-<%= entry ? entry.state : 'not_started' %>">
+              <%= entry && entry.state === 'completed' ? 'Completed' : 'Not started' %>
+            </span>
+            <a class="link-arrow" href="/learn/<%= lesson.slug %>">Read <span aria-hidden="true">→</span></a>
+          </div>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+</main>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,45 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="shell page">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/quizzes">Quizzes</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Expired attempt</span>
+  </nav>
+
+  <%- include('../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Quiz attempt</p>
+      <h1>This attempt expired</h1>
+      <p class="muted">
+        The attempt for <%= quiz.title %> (version <%= quiz.version %>) started
+        <%= formatDateTime(attempt.startedAt) %> and was not submitted within the
+        <%= attemptTtlHours %>-hour window. Nothing was graded or saved.
+      </p>
+    </div>
+  </header>
+
+  <div class="notice notice-warning">
+    <p><strong>No score was recorded.</strong></p>
+    <p class="muted">
+      Expired attempts appear in your history so the record is complete, but they do not count as
+      completed. You can start a fresh attempt whenever you are ready.
+    </p>
+  </div>
+
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/quizzes/history">Back to history</a>
+    <% if (retakeSlug) { %>
+      <form method="post" action="/quizzes/<%= retakeSlug %>/attempt" data-pending-form>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary" type="submit">Start a new attempt</button>
+      </form>
+    <% } else { %>
+      <a class="btn btn-primary" href="/quizzes">Back to quizzes</a>
+    <% } %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

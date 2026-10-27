@@ -1,0 +1,65 @@
+<%- include('../../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Admin · Quizzes</p>
+      <h1>Manage quizzes</h1>
+      <p class="muted">
+        <%= counts.published %> published · <%= counts.draft %> draft · <%= counts.archived %> archived version<%= counts.total === 1 ? '' : 's' %>.
+        Published versions are immutable — edits happen in a new draft version.
+      </p>
+    </div>
+    <div class="page-head-actions">
+      <a class="btn btn-primary" href="/admin/quizzes/new">New quiz</a>
+    </div>
+  </header>
+
+  <section class="section-tight">
+    <% if (versions.length === 0) { %>
+      <div class="empty-state">
+        <h3>No quizzes yet</h3>
+        <p class="muted">Create the first quiz, add questions to the draft, then publish it.</p>
+        <a class="btn btn-primary" href="/admin/quizzes/new">New quiz</a>
+      </div>
+    <% } else { %>
+      <div class="table-wrap">
+        <table class="data-table">
+          <caption class="sr-only">Quiz versions, newest first</caption>
+          <thead>
+            <tr>
+              <th scope="col">Quiz</th>
+              <th scope="col">Version</th>
+              <th scope="col">Status</th>
+              <th scope="col">Passing score</th>
+              <th scope="col">Updated</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% versions.forEach(function (quiz) { %>
+              <tr>
+                <td>
+                  <strong><%= quiz.title %></strong><br>
+                  <span class="muted small">/<%= quiz.slug %></span>
+                </td>
+                <td>v<%= quiz.version %></td>
+                <td><span class="badge badge-<%= quiz.status === 'published' ? 'success' : (quiz.status === 'archived' ? 'danger' : 'outline') %>"><%= quiz.status %></span></td>
+                <td><%= quiz.passingScorePercent %>%</td>
+                <td><%= formatDate(quiz.updatedAt) %></td>
+                <td>
+                  <a class="link-arrow" href="/admin/quizzes/<%= quiz.id %>">Open</a>
+                  <a class="link-arrow" href="/admin/quizzes/<%= quiz.id %>/preview">Preview</a>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('../../partials/footer') %>

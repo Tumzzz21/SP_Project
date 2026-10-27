@@ -1,0 +1,100 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="shell page">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/quizzes">Quizzes</a>
+    <span aria-hidden="true">/</span>
+    <a href="/quizzes/history">History</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Result</span>
+  </nav>
+
+  <%- include('../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Quiz result · Version <%= quiz.version %></p>
+      <h1><%= quiz.title %></h1>
+      <p class="muted">
+        Submitted <%= formatDateTime(attempt.submittedAt) %>. This result is tied to version
+        <%= quiz.version %> of the quiz, even if the quiz is edited later.
+      </p>
+    </div>
+  </header>
+
+  <section class="panel result-summary" aria-label="Score summary">
+    <div>
+      <p class="stat-label">Your score</p>
+      <p class="result-score"><%= percentage %><span>%</span></p>
+      <p class="muted">
+        <%= attempt.scorePoints %> of <%= attempt.maxPoints %> correct
+        <% if (unansweredCount > 0) { %>
+          · <%= unansweredCount %> left blank
+        <% } %>
+      </p>
+    </div>
+    <div class="result-meter">
+      <div class="meter" role="img" aria-label="<%= percentage %>% of questions answered correctly">
+        <span class="meter-fill" style="width: <%= percentage %>%"></span>
+      </div>
+      <p class="muted">
+        Every completed attempt is kept in your history. A new attempt starts from the currently
+        published version of this quiz.
+      </p>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="section-head">
+      <h2>Review and explanations</h2>
+      <p class="muted">Your selection is shown first, then the correct answer and why it is correct.</p>
+    </div>
+
+    <ol class="review-list">
+      <% answers.forEach(function (answer) { %>
+        <li class="review-card">
+          <div class="review-head">
+            <p class="question-prompt">
+              <span class="question-number"><%= answer.position %></span>
+              <span><%= answer.prompt %></span>
+            </p>
+            <% if (answer.selectedOptionId === null) { %>
+              <span class="badge badge-warning">Not answered</span>
+            <% } else if (answer.isCorrect === 1) { %>
+              <span class="badge badge-success">Correct</span>
+            <% } else { %>
+              <span class="badge badge-danger">Incorrect</span>
+            <% } %>
+          </div>
+
+          <dl class="answer-compare">
+            <div>
+              <dt>Your answer</dt>
+              <dd><%= answer.selectedLabel === null ? 'No answer selected' : answer.selectedLabel %></dd>
+            </div>
+            <div>
+              <dt>Correct answer</dt>
+              <dd><%= answer.correctLabel || 'Not available' %></dd>
+            </div>
+          </dl>
+
+          <div class="explanation">
+            <p><strong>Why:</strong> <%= answer.explanation %></p>
+          </div>
+        </li>
+      <% }); %>
+    </ol>
+  </section>
+
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/quizzes/history">Back to history</a>
+    <% if (latestPublished) { %>
+      <form method="post" action="/quizzes/<%= latestPublished.slug %>/attempt" data-pending-form>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary" type="submit">Take it again</button>
+      </form>
+    <% } %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

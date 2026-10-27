@@ -1,0 +1,90 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="shell page">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/quizzes">Quizzes</a>
+    <span aria-hidden="true">/</span>
+    <a href="/quizzes/<%= quiz.slug %>"><%= quiz.title %></a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Attempt</span>
+  </nav>
+
+  <%- include('../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Attempt · Version <%= quiz.version %></p>
+      <h1><%= quiz.title %></h1>
+      <p class="muted"><%= quiz.description %></p>
+    </div>
+  </header>
+
+  <div class="notice notice-info">
+    <p>
+      <strong><%= questions.length %> question<%= questions.length === 1 ? '' : 's' %>.</strong>
+      Answers are graded on the server when you submit. A blank answer counts as incorrect.
+      This attempt started <%= formatDateTime(attempt.startedAt) %> and expires
+      <%= formatDateTime(deadline) %>.
+    </p>
+  </div>
+
+  <% if (formError) { %>
+    <div class="notice notice-error" role="alert">
+      <p><strong>Your submission needs attention.</strong></p>
+      <p class="muted"><%= formError %></p>
+    </div>
+  <% } %>
+
+  <form method="post" action="/attempts/<%= attempt.id %>/submit" class="quiz-form" data-quiz-form data-pending-form>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <div class="quiz-progress" aria-live="polite">
+      <span class="muted" data-answer-counter data-total="<%= questions.length %>">
+        <%= selected.size %> of <%= questions.length %> answered
+      </span>
+      <progress max="<%= questions.length %>" value="<%= selected.size %>" data-answer-progress></progress>
+    </div>
+
+    <ol class="question-list">
+      <% questions.forEach(function (question) { %>
+        <li>
+          <fieldset class="question-card">
+            <legend class="question-prompt">
+              <span class="question-number"><%= question.position %></span>
+              <span><%= question.prompt %></span>
+            </legend>
+            <ul class="option-list">
+              <% question.options.forEach(function (option) { %>
+                <% const inputId = 'q' + question.id + 'o' + option.id; %>
+                <li>
+                  <label class="option option-choice" for="<%= inputId %>">
+                    <input
+                      type="radio"
+                      id="<%= inputId %>"
+                      name="q_<%= question.id %>"
+                      value="<%= option.id %>"
+                      <%= selected.get(question.id) === option.id ? 'checked' : '' %>
+                    >
+                    <span><%= option.label %></span>
+                  </label>
+                </li>
+              <% }); %>
+            </ul>
+          </fieldset>
+        </li>
+      <% }); %>
+    </ol>
+
+    <div class="quiz-actions">
+      <button class="btn btn-primary" type="submit">Submit answers</button>
+      <a class="btn btn-secondary" href="/quizzes/<%= quiz.slug %>">Leave without submitting</a>
+    </div>
+    <p class="muted form-hint">
+      If you leave this page before submitting, the attempt stays open until it expires and you can
+      resume it from the quiz page.
+    </p>
+  </form>
+</main>
+
+<script src="/js/quiz.js" defer></script>
+<%- include('../partials/footer') %>

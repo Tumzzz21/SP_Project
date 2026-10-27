@@ -1,0 +1,79 @@
+<%- include('../../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Admin · Lessons</p>
+      <h1>Manage lessons</h1>
+      <p class="muted">
+        <%= counts.published %> published · <%= counts.draft %> draft · <%= counts.archived %> archived.
+        Lessons are archived, never deleted, so student progress stays intact.
+      </p>
+    </div>
+    <div class="page-head-actions">
+      <a class="btn btn-primary" href="/admin/lessons/new">New lesson</a>
+    </div>
+  </header>
+
+  <form method="get" action="/admin/lessons" class="filter-bar" role="search">
+    <div class="field">
+      <label class="field-label" for="q">Search</label>
+      <input id="q" name="q" type="search" value="<%= search %>" placeholder="Title, slug, or summary">
+    </div>
+    <div class="field">
+      <label class="field-label" for="status">Status</label>
+      <select id="status" name="status">
+        <option value="" <%= status ? '' : 'selected' %>>All statuses</option>
+        <option value="published" <%= status === 'published' ? 'selected' : '' %>>Published</option>
+        <option value="draft" <%= status === 'draft' ? 'selected' : '' %>>Draft</option>
+        <option value="archived" <%= status === 'archived' ? 'selected' : '' %>>Archived</option>
+      </select>
+    </div>
+    <button class="btn btn-secondary" type="submit">Filter</button>
+  </form>
+
+  <section class="section-tight">
+    <% if (lessons.length === 0) { %>
+      <div class="empty-state">
+        <h3>No lessons match</h3>
+        <p class="muted">Adjust the search or create a new lesson.</p>
+      </div>
+    <% } else { %>
+      <div class="table-wrap">
+        <table class="data-table">
+          <caption class="sr-only">Lessons</caption>
+          <thead>
+            <tr>
+              <th scope="col">Title</th>
+              <th scope="col">Category</th>
+              <th scope="col">Status</th>
+              <th scope="col">Updated</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% lessons.forEach(function (lesson) { %>
+              <tr>
+                <td>
+                  <strong><%= lesson.title %></strong><br>
+                  <span class="muted small">/<%= lesson.slug %></span>
+                </td>
+                <td><span class="chip"><%= lesson.category %></span></td>
+                <td><span class="badge badge-<%= lesson.status === 'published' ? 'success' : (lesson.status === 'archived' ? 'danger' : 'outline') %>"><%= lesson.status %></span></td>
+                <td><%= formatDate(lesson.updatedAt) %></td>
+                <td>
+                  <a class="link-arrow" href="/admin/lessons/<%= lesson.id %>">Edit</a>
+                  <a class="link-arrow" href="/admin/lessons/<%= lesson.id %>/preview">Preview</a>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('../../partials/footer') %>

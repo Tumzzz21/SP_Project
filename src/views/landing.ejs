@@ -1,0 +1,142 @@
+<%- include('partials/head') %>
+
+<main id="main">
+  <section class="hero">
+    <div class="shell hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">Cybersecurity awareness for students</p>
+        <h1>Learn to spot the attacks that target students.</h1>
+        <p class="lead">
+          CyberSafe is a focused learning space for phishing, password security, online scams,
+          data privacy, and responsible internet use. Short lessons, honest explanations, and
+          checks you can actually apply to your own accounts.
+        </p>
+        <div class="hero-actions">
+          <% if (user) { %>
+            <a class="btn btn-primary" href="<%= user.role === 'admin' ? '/admin' : '/dashboard' %>">
+              Go to your <%= user.role === 'admin' ? 'admin area' : 'dashboard' %>
+            </a>
+            <a class="btn btn-secondary" href="/learn">Open the Learning Center</a>
+          <% } else { %>
+            <a class="btn btn-primary" href="/login">Sign in</a>
+            <a class="btn btn-secondary" href="#topics">See what you will learn</a>
+          <% } %>
+        </div>
+        <p class="hero-note">
+          Sign in with Google, or with your email and a password — passwords are stored
+          only as salted hashes, never as readable text.
+        </p>
+      </div>
+
+      <div class="hero-panel" aria-hidden="true">
+        <div class="panel-card">
+          <span class="badge badge-warning">Phishing attempt</span>
+          <p class="panel-subject">"Your student account will be closed today"</p>
+          <ul class="panel-signals">
+            <li>Urgent deadline</li>
+            <li>Login link, not a notice</li>
+            <li>Sender domain does not match</li>
+          </ul>
+          <p class="panel-verdict">Verify through the official portal, never through the link.</p>
+        </div>
+        <div class="panel-glow"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="topics">
+    <div class="shell">
+      <div class="section-head">
+        <h2>Five things every student should be able to do</h2>
+        <p class="muted">
+          The whole curriculum is built around these goals. Each one becomes a lesson track
+          with practical checks and a short quiz.
+        </p>
+      </div>
+
+      <ul class="topic-grid">
+        <% categories.forEach(function (category, index) { %>
+          <li class="topic-card">
+            <span class="topic-index" aria-hidden="true"><%= String(index + 1).padStart(2, '0') %></span>
+            <h3><%= category.label %></h3>
+            <p><%= category.description %></p>
+          </li>
+        <% }); %>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section section-muted" id="how-it-works">
+    <div class="shell">
+      <div class="section-head">
+        <h2>How CyberSafe works</h2>
+        <p class="muted">Three steps, no clutter, and nothing to install.</p>
+      </div>
+
+      <ol class="step-grid">
+        <li class="step-card">
+          <h3>Sign in with Google or a password</h3>
+          <p>
+            Google shares only your verified email and basic profile — your Google password
+            never reaches this site. Email sign-in keeps your password only as a salted hash.
+          </p>
+        </li>
+        <li class="step-card">
+          <h3>Pick a username</h3>
+          <p>Choose the display name and username your instructor will see. One sign-in maps to one CyberSafe account.</p>
+        </li>
+        <li class="step-card">
+          <h3>Learn and check yourself</h3>
+          <p>Work through the five topic tracks at your own pace. Quizzes are graded on the server, and answer keys are never sent to the browser.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="shell split">
+      <div>
+        <h2>Built to be honest about what is finished</h2>
+        <p class="muted">
+          CyberSafe is working end to end: accounts and roles, the Learning Center with
+          per-student progress, versioned quizzes with server-side grading and history, and
+          admin tools for lessons, quizzes, and attempt review. Nothing on this site pretends
+          to work before it does.
+        </p>
+        <p class="muted">
+          <%= lessonCount %> lesson<%= lessonCount === 1 ? '' : 's' %> published so far, covering all five
+          learning goals.
+        </p>
+      </div>
+
+      <ul class="preview-list">
+        <% if (previewLessons.length === 0) { %>
+          <li class="empty-state">
+            <p><strong>No lessons published yet.</strong></p>
+            <p class="muted">An administrator can publish lessons from the server.</p>
+          </li>
+        <% } else { %>
+          <% previewLessons.forEach(function (lesson) { %>
+            <li class="preview-item">
+              <span class="badge"><%= lesson.category %></span>
+              <p class="preview-title"><%= lesson.title %></p>
+              <p class="muted"><%= lesson.summary %></p>
+            </li>
+          <% }); %>
+        <% } %>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section cta-band">
+    <div class="shell cta-inner">
+      <div>
+        <h2>Start with one lesson today</h2>
+        <p class="muted">Ten minutes on phishing is usually enough to change how you read your inbox.</p>
+      </div>
+      <a class="btn btn-primary" href="/login">Sign in to begin</a>
+    </div>
+  </section>
+</main>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,157 @@
+<%- include('../../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../../partials/flash') %>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/admin/lessons">Lessons</a>
+    <span aria-hidden="true">/</span>
+    <span><%= lesson ? 'Edit' : 'New' %></span>
+  </nav>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Admin · Lesson</p>
+      <h1><%= lesson ? `Edit: ${lesson.title}` : 'New lesson' %></h1>
+      <p class="muted">
+        New lessons start as drafts. Publishing makes a lesson visible in the Learning Center;
+        archiving hides it while keeping student progress.
+      </p>
+    </div>
+    <% if (lesson) { %>
+      <div class="page-head-actions">
+        <span class="badge badge-<%= lesson.status === 'published' ? 'success' : (lesson.status === 'archived' ? 'danger' : 'outline') %>"><%= lesson.status %></span>
+        <a class="btn btn-secondary btn-sm" href="/admin/lessons/<%= lesson.id %>/preview">Preview</a>
+      </div>
+    <% } %>
+  </header>
+
+  <div class="split">
+    <section class="panel">
+      <form method="post" action="<%= lesson ? `/admin/lessons/${lesson.id}` : '/admin/lessons' %>" class="form-stack" novalidate data-pending-form>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <div class="field<%= errors.title ? ' field-invalid' : '' %>">
+          <label class="field-label" for="title">Title</label>
+          <input id="title" name="title" type="text" value="<%= values.title %>" required minlength="3" maxlength="120"
+            aria-describedby="title-help<%= errors.title ? ' title-error' : '' %>" <%= errors.title ? 'aria-invalid="true"' : '' %>>
+          <p class="field-help" id="title-help">3–120 characters. Shown on lesson cards.</p>
+          <% if (errors.title) { %><p class="field-error" id="title-error"><%= errors.title %></p><% } %>
+        </div>
+
+        <div class="field<%= errors.slug ? ' field-invalid' : '' %>">
+          <label class="field-label" for="slug">Slug</label>
+          <input id="slug" name="slug" type="text" value="<%= values.slug %>" required minlength="3" maxlength="80"
+            aria-describedby="slug-help<%= errors.slug ? ' slug-error' : '' %>" <%= errors.slug ? 'aria-invalid="true"' : '' %>>
+          <p class="field-help" id="slug-help">URL segment, must be unique: /learn/&lt;slug&gt;. Lowercase letters, numbers, hyphens.</p>
+          <% if (errors.slug) { %><p class="field-error" id="slug-error"><%= errors.slug %></p><% } %>
+        </div>
+
+        <div class="field<%= errors.category ? ' field-invalid' : '' %>">
+          <label class="field-label" for="category">Category</label>
+          <select id="category" name="category" required aria-describedby="category-help<%= errors.category ? ' category-error' : '' %>">
+            <option value="" <%= values.category ? '' : 'selected' %>>Choose a category</option>
+            <% categories.forEach(function (cat) { %>
+              <option value="<%= cat.key %>" <%= values.category === cat.key ? 'selected' : '' %>><%= cat.label %></option>
+            <% }); %>
+          </select>
+          <p class="field-help" id="category-help">One of the five CyberSafe learning goals.</p>
+          <% if (errors.category) { %><p class="field-error" id="category-error"><%= errors.category %></p><% } %>
+        </div>
+
+        <div class="field<%= errors.summary ? ' field-invalid' : '' %>">
+          <label class="field-label" for="summary">Summary</label>
+          <textarea id="summary" name="summary" rows="2" required maxlength="200"
+            aria-describedby="summary-help<%= errors.summary ? ' summary-error' : '' %>" <%= errors.summary ? 'aria-invalid="true"' : '' %>><%= values.summary %></textarea>
+          <p class="field-help" id="summary-help">10–200 characters. Appears on lesson cards and previews.</p>
+          <% if (errors.summary) { %><p class="field-error" id="summary-error"><%= errors.summary %></p><% } %>
+        </div>
+
+        <div class="field<%= errors.readingMinutes ? ' field-invalid' : '' %>">
+          <label class="field-label" for="readingMinutes">Reading time (minutes)</label>
+          <input id="readingMinutes" name="readingMinutes" type="number" min="1" max="60" value="<%= values.readingMinutes %>"
+            aria-describedby="readingMinutes-help<%= errors.readingMinutes ? ' readingMinutes-error' : '' %>">
+          <p class="field-help" id="readingMinutes-help">Estimated minutes to read, 1–60.</p>
+          <% if (errors.readingMinutes) { %><p class="field-error" id="readingMinutes-error"><%= errors.readingMinutes %></p><% } %>
+        </div>
+
+        <div class="field<%= errors.content ? ' field-invalid' : '' %>">
+          <label class="field-label" for="content">Content</label>
+          <textarea id="content" name="content" rows="16" required
+            aria-describedby="content-help<%= errors.content ? ' content-error' : '' %>" <%= errors.content ? 'aria-invalid="true"' : '' %>><%= values.content %></textarea>
+          <p class="field-help" id="content-help">
+            Plain-text formatting: <code>## heading</code>, <code>- bullet</code>, <code>&gt; callout</code>,
+            <code>**bold**</code>, <code>`code`</code>. HTML is escaped, so scripts never render.
+          </p>
+          <% if (errors.content) { %><p class="field-error" id="content-error"><%= errors.content %></p><% } %>
+        </div>
+
+        <div class="form-inline-actions">
+          <button class="btn btn-primary" type="submit"><%= lesson ? 'Save changes' : 'Create draft' %></button>
+          <a class="btn btn-ghost" href="/admin/lessons">Cancel</a>
+        </div>
+      </form>
+    </section>
+
+    <div class="stack">
+      <% if (lesson) { %>
+        <section class="panel panel-muted">
+          <h2>Publication</h2>
+          <p class="muted">Current status: <strong><%= lesson.status %></strong>.
+            <% if (lesson.status === 'published') { %>
+              Students can read this lesson now.
+            <% } else if (lesson.status === 'draft') { %>
+              Hidden from students until published.
+            <% } else { %>
+              Archived — hidden from students, progress preserved.
+            <% } %>
+          </p>
+          <form method="post" action="/admin/lessons/<%= lesson.id %>/status" class="form-inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <% if (lesson.status !== 'published') { %>
+              <input type="hidden" name="status" value="published">
+              <button class="btn btn-primary btn-sm" type="submit">Publish</button>
+            <% } else { %>
+              <input type="hidden" name="status" value="draft">
+              <button class="btn btn-secondary btn-sm" type="submit">Unpublish</button>
+            <% } %>
+          </form>
+          <% if (lesson.status !== 'archived') { %>
+            <form method="post" action="/admin/lessons/<%= lesson.id %>/status" class="form-inline">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="status" value="archived">
+              <button class="btn btn-secondary btn-sm" type="submit">Archive</button>
+            </form>
+          <% } else { %>
+            <form method="post" action="/admin/lessons/<%= lesson.id %>/status" class="form-inline">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="status" value="draft">
+              <button class="btn btn-secondary btn-sm" type="submit">Restore to draft</button>
+            </form>
+          <% } %>
+        </section>
+
+        <section class="panel panel-muted">
+          <h2>Facts</h2>
+          <dl class="detail-list">
+            <div><dt>Created</dt><dd><%= formatDate(lesson.createdAt) %></dd></div>
+            <div><dt>Last updated</dt><dd><%= formatDate(lesson.updatedAt) %></dd></div>
+            <div><dt>Published</dt><dd><%= lesson.publishedAt ? formatDate(lesson.publishedAt) : '—' %></dd></div>
+          </dl>
+          <p class="muted small">Lessons are never hard-deleted: archiving keeps every student's completion history.</p>
+        </section>
+      <% } else { %>
+        <section class="panel panel-muted">
+          <h2>Before you publish</h2>
+          <ul class="roadmap">
+            <li>Keep content accurate and specific to one learning goal.</li>
+            <li>Check the preview on mobile widths.</li>
+            <li>Drafts are invisible to students, so iterate safely.</li>
+          </ul>
+        </section>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<%- include('../../partials/footer') %>

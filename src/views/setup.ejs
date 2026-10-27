@@ -1,0 +1,95 @@
+<%
+  // Local (email+password) and dev accounts have not been verified by Google;
+  // only a real Google subject counts as "verified".
+  var identityKind = 'google';
+  if (String(user.googleSub).indexOf('local:') === 0) identityKind = 'password';
+  else if (String(user.googleSub).indexOf('dev:') === 0) identityKind = 'dev';
+%>
+<%- include('partials/head') %>
+
+<main id="main" class="auth-shell">
+  <div class="auth-card auth-card-wide">
+    <p class="eyebrow">One-time setup</p>
+    <h1>Finish your CyberSafe account</h1>
+    <p class="muted auth-intro">
+      <% if (identityKind === 'google') { %>
+        Your Google identity is verified. Choose how you appear in CyberSafe. You can change your
+        display name later, but your username stays fixed so classmates and instructors can
+        recognise your work.
+      <% } else { %>
+        Your account was created with your email address. Choose how you appear in CyberSafe. You
+        can change your display name later, but your username stays fixed so classmates and
+        instructors can recognise your work.
+      <% } %>
+    </p>
+
+    <%- include('partials/flash') %>
+
+    <div class="identity-chip">
+      <span class="identity-label">Signed in as</span>
+      <span class="identity-email"><%= user.email %></span>
+      <% if (identityKind === 'google') { %>
+        <span class="badge badge-success">Google verified</span>
+      <% } else if (identityKind === 'password') { %>
+        <span class="badge badge-outline">Password account</span>
+      <% } else { %>
+        <span class="badge badge-warning">Development sign-in</span>
+      <% } %>
+    </div>
+
+    <form method="post" action="/setup" class="form-stack" novalidate data-pending-form>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="field<%= errors.username ? ' field-invalid' : '' %>">
+        <label class="field-label" for="username">Username</label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          value="<%= values.username %>"
+          required
+          minlength="3"
+          maxlength="20"
+          pattern="[a-zA-Z][a-zA-Z0-9_]{2,19}"
+          autocomplete="username"
+          spellcheck="false"
+          aria-describedby="username-help<%= errors.username ? ' username-error' : '' %>"
+          <%= errors.username ? 'aria-invalid="true"' : '' %>
+        >
+        <p class="field-help" id="username-help">3–20 characters. Lowercase letters, numbers, or underscore, starting with a letter.</p>
+        <% if (errors.username) { %>
+          <p class="field-error" id="username-error"><%= errors.username %></p>
+        <% } %>
+      </div>
+
+      <div class="field<%= errors.displayName ? ' field-invalid' : '' %>">
+        <label class="field-label" for="displayName">Display name</label>
+        <input
+          id="displayName"
+          name="displayName"
+          type="text"
+          value="<%= values.displayName %>"
+          required
+          minlength="2"
+          maxlength="60"
+          autocomplete="name"
+          aria-describedby="displayName-help<%= errors.displayName ? ' displayName-error' : '' %>"
+          <%= errors.displayName ? 'aria-invalid="true"' : '' %>
+        >
+        <p class="field-help" id="displayName-help">This is the name shown on your dashboard. 2–60 characters.</p>
+        <% if (errors.displayName) { %>
+          <p class="field-error" id="displayName-error"><%= errors.displayName %></p>
+        <% } %>
+      </div>
+
+      <button class="btn btn-primary btn-block" type="submit">Create my account</button>
+    </form>
+
+    <form method="post" action="/auth/logout" class="auth-cancel">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" class="link-button">Sign out and use a different account</button>
+    </form>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

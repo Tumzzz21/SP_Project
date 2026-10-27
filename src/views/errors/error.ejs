@@ -1,0 +1,29 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="auth-shell">
+  <div class="auth-card error-card">
+    <p class="error-code" aria-hidden="true"><%= status %></p>
+    <h1><%= title %></h1>
+    <p class="muted"><%= message %></p>
+    <% if (typeof hint !== 'undefined' && hint) { %>
+      <p class="muted"><%= hint %></p>
+    <% } %>
+
+    <%- include('../partials/flash') %>
+
+    <div class="error-actions">
+      <a class="btn btn-primary" href="/">Go to the home page</a>
+      <% if (!user) { %>
+        <a class="btn btn-secondary" href="/login">Sign in</a>
+      <% } else { %>
+        <a class="btn btn-secondary" href="<%= user.role === 'admin' ? '/admin' : '/dashboard' %>">Open my dashboard</a>
+      <% } %>
+    </div>
+
+    <% if (typeof requestId !== 'undefined' && requestId) { %>
+      <p class="fine-print">Reference: <code><%= requestId %></code></p>
+    <% } %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

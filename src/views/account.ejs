@@ -1,0 +1,106 @@
+<%- include('partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Account</p>
+      <h1>Your CyberSafe account</h1>
+      <p class="muted">Profile details, sign-in method, and active sessions.</p>
+    </div>
+  </header>
+
+  <div class="split">
+    <section class="panel">
+      <h2>Profile</h2>
+
+      <dl class="detail-list">
+        <div>
+          <dt>Display name</dt>
+          <dd><%= profile.displayName %></dd>
+        </div>
+        <div>
+          <dt>Username</dt>
+          <dd><%= profile.username %></dd>
+        </div>
+        <div>
+          <dt>Email</dt>
+          <dd><%= profile.email %></dd>
+        </div>
+        <div>
+          <dt>Role</dt>
+          <dd><span class="badge"><%= profile.role %></span></dd>
+        </div>
+        <div>
+          <dt>Member since</dt>
+          <dd><%= formatDate(profile.createdAt) %></dd>
+        </div>
+        <div>
+          <dt>Last sign-in</dt>
+          <dd><%= formatDate(profile.lastLoginAt) %></dd>
+        </div>
+      </dl>
+
+      <form method="post" action="/account" class="form-stack form-inline" novalidate data-pending-form>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="field<%= errors.displayName ? ' field-invalid' : '' %>">
+          <label class="field-label" for="displayName">Change display name</label>
+          <input
+            id="displayName"
+            name="displayName"
+            type="text"
+            value="<%= values.displayName %>"
+            required
+            minlength="2"
+            maxlength="60"
+            aria-describedby="displayName-help<%= errors.displayName ? ' displayName-error' : '' %>"
+            <%= errors.displayName ? 'aria-invalid="true"' : '' %>
+          >
+          <p class="field-help" id="displayName-help">2–60 characters. Your username cannot be changed.</p>
+          <% if (errors.displayName) { %>
+            <p class="field-error" id="displayName-error"><%= errors.displayName %></p>
+          <% } %>
+        </div>
+        <button class="btn btn-primary" type="submit">Save changes</button>
+      </form>
+    </section>
+
+    <div class="stack">
+      <section class="panel">
+        <h2>Sign-in method</h2>
+        <% if (String(user.googleSub).indexOf('local:') === 0) { %>
+          <p class="muted">
+            You sign in with your email and password. CyberSafe stores only a salted scrypt hash
+            of your password — never a readable copy — plus your email, and no Google data at all.
+          </p>
+        <% } else if (String(user.googleSub).indexOf('dev:') === 0) { %>
+          <p class="muted">
+            This account was created by the local development sign-in, which is only available
+            on a teacher's test server.
+          </p>
+        <% } else { %>
+          <p class="muted">
+            You sign in with Google. CyberSafe stores your Google account identifier and email,
+            and never your Google password.
+          </p>
+        <% } %>
+        <p class="muted"><strong><%= activeSessions %></strong> active session<%= activeSessions === 1 ? '' : 's' %> for this account.</p>
+      </section>
+
+      <section class="panel panel-muted">
+        <h2>Privacy and data</h2>
+        <p class="muted">
+          CyberSafe keeps your display name, username, verified email, role, and lesson progress.
+          Session records are deleted when you sign out or when they expire.
+        </p>
+        <p class="muted">
+          For data correction or deletion requests, contact the site administrator through your
+          instructor.
+        </p>
+      </section>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

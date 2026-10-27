@@ -1,0 +1,43 @@
+<%- include('../../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../../partials/flash') %>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/admin/lessons">Lessons</a>
+    <span aria-hidden="true">/</span>
+    <a href="/admin/lessons/<%= lesson.id %>"><%= lesson.title %></a>
+    <span aria-hidden="true">/</span>
+    <span>Preview</span>
+  </nav>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Admin preview · <%= lesson.category %> · <%= lesson.readingMinutes %> min read</p>
+      <h1><%= lesson.title %></h1>
+      <p class="muted"><%= lesson.summary %></p>
+    </div>
+    <div class="page-head-actions">
+      <span class="badge badge-<%= lesson.status === 'published' ? 'success' : (lesson.status === 'archived' ? 'danger' : 'outline') %>"><%= lesson.status %></span>
+      <a class="btn btn-secondary btn-sm" href="/admin/lessons/<%= lesson.id %>">Back to edit</a>
+      <% if (lesson.status === 'published') { %>
+        <a class="btn btn-ghost btn-sm" href="/learn/<%= lesson.slug %>">Open live lesson</a>
+      <% } %>
+    </div>
+  </header>
+
+  <% if (lesson.status !== 'published') { %>
+    <div class="notice notice-warning" role="status">
+      This lesson is <strong><%= lesson.status %></strong> — students cannot see it yet. The preview below
+      shows exactly how the content will render when published.
+    </div>
+  <% } %>
+
+  <article class="lesson-article">
+    <div class="article-body">
+      <%- bodyHtml %>
+    </div>
+  </article>
+</main>
+
+<%- include('../../partials/footer') %>

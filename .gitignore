@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local database files (never commit student data)
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Logs and generated artifacts
+logs/
+*.log
+npm-debug.log*
+coverage/
+.nyc_output/
+dist/
+tmp/
