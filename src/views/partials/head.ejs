@@ -40,9 +40,9 @@
             <a href="/admin" class="<%= activeNav === 'admin' ? 'is-active' : '' %>"<%= activeNav === 'admin' ? ' aria-current="page"' : '' %>>Admin</a>
           <% } else { %>
             <a href="/dashboard" class="<%= activeNav === 'dashboard' ? 'is-active' : '' %>"<%= activeNav === 'dashboard' ? ' aria-current="page"' : '' %>>Dashboard</a>
+            <a href="/learn" class="<%= activeNav === 'learn' ? 'is-active' : '' %>"<%= activeNav === 'learn' ? ' aria-current="page"' : '' %>>Learning Center</a>
+            <a href="/quizzes" class="<%= activeNav === 'quizzes' ? 'is-active' : '' %>"<%= activeNav === 'quizzes' ? ' aria-current="page"' : '' %>>Quizzes</a>
           <% } %>
-          <a href="/learn" class="<%= activeNav === 'learn' ? 'is-active' : '' %>"<%= activeNav === 'learn' ? ' aria-current="page"' : '' %>>Learning Center</a>
-          <a href="/quizzes" class="<%= activeNav === 'quizzes' ? 'is-active' : '' %>"<%= activeNav === 'quizzes' ? ' aria-current="page"' : '' %>>Quizzes</a>
           <%
             const avatarName = String(user.displayName || user.username || user.email || '').trim();
             const avatarInitials = avatarName
