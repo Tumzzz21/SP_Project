@@ -37,7 +37,7 @@
           <a class="nav-cta" href="/login">Sign in</a>
         <% } else { %>
           <% if (user.role === 'admin') { %>
-            <a href="/admin" class="<%= activeNav === 'admin' ? 'is-active' : '' %>"<%= activeNav === 'admin' ? ' aria-current="page"' : '' %>>Admin</a>
+            <a href="/admin" class="<%= activeNav === 'admin' ? 'is-active' : '' %>"<%= activeNav === 'admin' ? ' aria-current="page"' : '' %>>Dashboard</a>
           <% } else { %>
             <a href="/dashboard" class="<%= activeNav === 'dashboard' ? 'is-active' : '' %>"<%= activeNav === 'dashboard' ? ' aria-current="page"' : '' %>>Dashboard</a>
             <a href="/learn" class="<%= activeNav === 'learn' ? 'is-active' : '' %>"<%= activeNav === 'learn' ? ' aria-current="page"' : '' %>>Learning Center</a>
