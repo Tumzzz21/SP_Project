@@ -744,10 +744,11 @@ test('admin dashboard reports live student, content, and participation stats', a
 
   const response = await request(app).get('/admin').set('Cookie', adminAuth.cookie);
   assert.equal(response.status, 200);
-  assert.match(response.text, /Admin dashboard/);
-  assert.match(response.text, /Recent accounts/);
-  assert.match(response.text, /Administrator responsibilities/);
-  assert.match(response.text, /Quiz participation/);
+  assert.match(response.text, /Admin overview/);
+  assert.match(response.text, /ACTIVE STUDENTS/);
+  assert.match(response.text, /PUBLISHED LESSONS/);
+  assert.match(response.text, /PUBLISHED QUIZ VERSIONS/);
+  assert.match(response.text, /QUIZ PARTICIPATION/);
   assert.match(response.text, /100%/, 'average score of the perfect attempt');
   assert.match(response.text, /Manage lessons/);
   assert.match(response.text, /Attempt review/);

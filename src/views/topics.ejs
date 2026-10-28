@@ -1,0 +1,27 @@
+<%- include('partials/head') %>
+
+<main id="main">
+  <section class="section section-padded" id="topics">
+    <div class="shell">
+      <div class="section-head">
+        <h2>Five things every student should be able to do</h2>
+        <p class="muted">
+          The whole curriculum is built around these goals. Each one becomes a lesson track
+          with practical checks and a short quiz.
+        </p>
+      </div>
+
+      <ul class="topic-grid">
+        <% categories.forEach(function (category, index) { %>
+          <li class="topic-card">
+            <span class="topic-index" aria-hidden="true"><%= String(index + 1).padStart(2, '0') %></span>
+            <h3><%= category.label %></h3>
+            <p><%= category.description %></p>
+          </li>
+        <% }); %>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<%- include('partials/footer') %>

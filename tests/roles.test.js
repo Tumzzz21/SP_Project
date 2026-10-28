@@ -34,8 +34,8 @@ test('administrators reach the admin shell and are redirected there from the stu
 
   const page = await request(app).get('/admin').set('Cookie', auth.cookie);
   assert.equal(page.status, 200);
-  assert.match(page.text, /Admin dashboard/);
-  assert.match(page.text, /Published lessons/);
+  assert.match(page.text, /Admin overview/);
+  assert.match(page.text, /PUBLISHED LESSONS/);
 
   const dashboard = await request(app).get('/dashboard').set('Cookie', auth.cookie);
   assert.equal(dashboard.status, 302);

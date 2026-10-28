@@ -13,7 +13,7 @@
 
   <header class="site-header">
     <div class="shell header-inner">
-      <a class="brand" href="<%= user ? (user.role === 'admin' ? '/admin' : '/dashboard') : '/' %>">
+      <div class="brand">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 3l7 3v6c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V6l7-3z"/>
@@ -21,7 +21,7 @@
           </svg>
         </span>
         <span class="brand-name">CyberSafe</span>
-      </a>
+      </div>
 
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
         <span class="nav-toggle-bar" aria-hidden="true"></span>
@@ -32,8 +32,8 @@
 
       <nav class="primary-nav" id="primary-nav" aria-label="Primary">
         <% if (!user) { %>
-          <a href="/#topics">Topics</a>
-          <a href="/#how-it-works">How it works</a>
+          <a href="/topics">Topics</a>
+          <a href="/how-it-works">How it works</a>
           <a class="nav-cta" href="/login">Sign in</a>
         <% } else { %>
           <% if (user.role === 'admin') { %>

@@ -2,49 +2,30 @@
 
 <main id="main">
   <section class="hero">
-    <div class="shell hero-inner">
-      <div class="hero-copy">
-        <p class="eyebrow">Cybersecurity awareness for students</p>
-        <h1>Learn to spot the attacks that target students.</h1>
-        <p class="lead">
-          CyberSafe is a focused learning space for phishing, password security, online scams,
-          data privacy, and responsible internet use. Short lessons, honest explanations, and
-          checks you can actually apply to your own accounts.
-        </p>
-        <div class="hero-actions">
-          <% if (user) { %>
-            <a class="btn btn-primary" href="<%= user.role === 'admin' ? '/admin' : '/dashboard' %>">
-              Go to your <%= user.role === 'admin' ? 'admin area' : 'dashboard' %>
-            </a>
-            <a class="btn btn-secondary" href="/learn">Open the Learning Center</a>
-          <% } else { %>
-            <a class="btn btn-primary" href="/login">Sign in</a>
-            <a class="btn btn-secondary" href="#topics">See what you will learn</a>
-          <% } %>
-        </div>
-        <p class="hero-note">
-          Sign in with Google, or with your email and a password — passwords are stored
-          only as salted hashes, never as readable text.
-        </p>
-      </div>
+    <div class="shell">
+      <div class="hero-grid">
+        <div class="hero-text">
+          <h1>Learn to spot the attacks that target students.</h1>
+          <p class="lead">CyberSafe is a focused learning space for phishing, password security, online scams, data privacy, and responsible internet use. Short lessons, honest explanations, and checks you can actually apply to your own accounts.</p>
 
-      <div class="hero-panel" aria-hidden="true">
-        <div class="panel-card">
-          <span class="badge badge-warning">Phishing attempt</span>
-          <p class="panel-subject">"Your student account will be closed today"</p>
-          <ul class="panel-signals">
-            <li>Urgent deadline</li>
-            <li>Login link, not a notice</li>
-            <li>Sender domain does not match</li>
-          </ul>
-          <p class="panel-verdict">Verify through the official portal, never through the link.</p>
         </div>
-        <div class="panel-glow"></div>
+        <div class="hero-card">
+          <div class="panel-card">
+            <span class="badge badge-warning">Phishing attack</span>
+            <p class="panel-subject">"Your student account will be closed today"</p>
+            <ul class="panel-signals">
+              <li>Urgent deadline</li>
+              <li>Login link, not a notice</li>
+              <li>Sender domain does not match</li>
+            </ul>
+            <p class="panel-verdict">Verify through the official portal, never through the link.</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="section" id="topics">
+  <section id="topics" class="section section-padded">
     <div class="shell">
       <div class="section-head">
         <h2>Five things every student should be able to do</h2>
@@ -66,7 +47,7 @@
     </div>
   </section>
 
-  <section class="section section-muted" id="how-it-works">
+  <section id="how-it-works" class="section section-muted section-padded">
     <div class="shell">
       <div class="section-head">
         <h2>How CyberSafe works</h2>
@@ -94,47 +75,27 @@
   </section>
 
   <section class="section">
-    <div class="shell split">
-      <div>
-        <h2>Built to be honest about what is finished</h2>
-        <p class="muted">
-          CyberSafe is working end to end: accounts and roles, the Learning Center with
-          per-student progress, versioned quizzes with server-side grading and history, and
-          admin tools for lessons, quizzes, and attempt review. Nothing on this site pretends
-          to work before it does.
-        </p>
-        <p class="muted">
-          <%= lessonCount %> lesson<%= lessonCount === 1 ? '' : 's' %> published so far, covering all five
-          learning goals.
-        </p>
+    <div class="shell">
+      <div class="built-honest-grid">
+        <div class="built-honest-left">
+          <h2>Built to be honest about what is finished</h2>
+          <p class="muted">
+            CyberSafe is working end to end: accounts and roles, the Learning Center with
+            per-student progress, versioned quizzes with server-side grading and history, and
+            admin tools for lessons, quizzes, and attempt review. Nothing on this site pretends
+            to work before it does.
+          </p>
+          <div class="metrics">
+            <p class="muted"><%= lessonCount %> lesson<%= lessonCount === 1 ? '' : 's' %> published so far, covering all five
+              learning goals.</p>
+          </div>
+        </div>
+        <div class="built-honest-right">
+          <div class="feature-card">ETHICS</div>
+          <div class="feature-card">PASSWORDS</div>
+          <div class="feature-card">PHISHING</div>
+        </div>
       </div>
-
-      <ul class="preview-list">
-        <% if (previewLessons.length === 0) { %>
-          <li class="empty-state">
-            <p><strong>No lessons published yet.</strong></p>
-            <p class="muted">An administrator can publish lessons from the server.</p>
-          </li>
-        <% } else { %>
-          <% previewLessons.forEach(function (lesson) { %>
-            <li class="preview-item">
-              <span class="badge"><%= lesson.category %></span>
-              <p class="preview-title"><%= lesson.title %></p>
-              <p class="muted"><%= lesson.summary %></p>
-            </li>
-          <% }); %>
-        <% } %>
-      </ul>
-    </div>
-  </section>
-
-  <section class="section cta-band">
-    <div class="shell cta-inner">
-      <div>
-        <h2>Start with one lesson today</h2>
-        <p class="muted">Ten minutes on phishing is usually enough to change how you read your inbox.</p>
-      </div>
-      <a class="btn btn-primary" href="/login">Sign in to begin</a>
     </div>
   </section>
 </main>

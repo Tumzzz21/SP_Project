@@ -138,8 +138,11 @@ test('the admin shell renders without template errors', async () => {
 
   const response = await request(app).get('/admin').set('Cookie', auth.cookie);
   assert.equal(response.status, 200);
-  assert.match(response.text, /Recent accounts/);
-  assert.match(response.text, /Administrator responsibilities/);
+  assert.match(response.text, /Admin overview/);
+  assert.match(response.text, /ACTIVE STUDENTS/);
+  assert.match(response.text, /PUBLISHED LESSONS/);
+  assert.match(response.text, /PUBLISHED QUIZ VERSIONS/);
+  assert.match(response.text, /QUIZ PARTICIPATION/);
 });
 
 test('a pending account sees the setup page and nothing else', async () => {
