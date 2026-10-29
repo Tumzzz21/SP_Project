@@ -20,7 +20,7 @@
         <span class="muted">(<%= summary.percentComplete %>%)</span>
       </p>
       <div class="meter" role="img" aria-label="<%= summary.percentComplete %>% of published lessons completed">
-        <span class="meter-fill" style="width: <%= summary.percentComplete %>%"></span>
+        <progress class="meter-fill" value="<%= summary.percentComplete %>" max="100" aria-hidden="true"></progress>
       </div>
     </div>
     <% if (nextLesson) { %>

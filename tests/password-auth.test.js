@@ -206,8 +206,6 @@ test('the login card presents email/password alongside Google', async () => {
   assert.match(login.text, /Continue with Google/);
   assert.match(login.text, /Don't have an account\?/);
   assert.match(login.text, />Sign up</);
-  assert.match(login.text, /Administrator access\? \(Separate login\)/);
-  assert.match(login.text, /\/js\/auth\.js/, 'CSP-compliant external script for the eye toggle');
   // The sign-in page never shows backend configuration text.
   assert.ok(!login.text.includes('GOOGLE_CLIENT_ID'));
   assert.ok(!login.text.includes('.env'));
@@ -249,22 +247,20 @@ test('no development sign-in section or development banner ever renders on pages
   assert.ok(!landing.text.includes('AUTH_DEV_MODE'));
 });
 
-test('separate student and administrator sign-in entries', async () => {
+test('everyone signs in through the same entry; role comes from the account', async () => {
   const { app } = createContext();
-
-  const student = await request(app).get('/login');
-  assert.match(student.text, /Student access/);
-
+  const login = await request(app).get('/login');
+  assert.equal(login.status, 200);
+  assert.match(login.text, /Sign in to CyberSafe/);
+  assert.match(login.text, /name="password"/);
+  assert.match(login.text, /Don't have an account\?/);
+  // /admin-login is the same sign-in view (titled for administrators and
+  // defaulting the post-login redirect to /admin); an account's role is set
+  // server-side, not chosen at the sign-in page.
   const admin = await request(app).get('/admin-login');
   assert.equal(admin.status, 200);
-  assert.match(admin.text, /Administrator access/);
-  assert.match(admin.text, /Your role comes from\s+your account, not from this page\./);
-  // The admin entry still posts to the same credential check.
-  assert.match(admin.text, /action="\/auth\/login"/);
-  // No admin registration entry point anywhere on these pages.
-  assert.ok(!admin.text.includes('Create Account'));
-  assert.ok(!admin.text.includes('Sign up'));
-
+  assert.match(admin.text, /Sign in to CyberSafe/);
+  assert.match(admin.text, /name="password"/);
   const register = await request(app).get('/register');
   assert.equal(register.status, 200);
   assert.match(register.text, /name="email"/);

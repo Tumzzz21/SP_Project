@@ -1,193 +1,82 @@
 <%- include('../partials/head') %>
 
+
+
 <main id="main" class="shell page">
   <%- include('../partials/flash') %>
 
   <header class="page-head">
     <div>
       <p class="eyebrow">Administrator</p>
-      <h1>Admin dashboard</h1>
-      <p class="muted">
-        Signed in as <%= user.displayName %> (<%= user.email %>). Live counts from the database —
-        manage lessons, quizzes, and student attempts below.
-      </p>
-    </div>
-    <div class="page-head-actions">
-      <a class="btn btn-secondary btn-sm" href="/admin/lessons">Manage lessons</a>
-      <a class="btn btn-secondary btn-sm" href="/admin/quizzes">Manage quizzes</a>
-      <a class="btn btn-secondary btn-sm" href="/admin/attempts">Attempt review</a>
+      <h1>Admin overview</h1>
     </div>
   </header>
 
-  <section class="stat-grid" aria-label="Platform totals">
-    <div class="stat-card">
-      <p class="stat-label">Active students</p>
-      <p class="stat-value"><%= studentCounts.active %></p>
-      <p class="muted"><%= studentCounts.pendingSetup %> awaiting setup · <%= studentCounts.disabled %> disabled</p>
+  <%- include('../partials/admin-tabs') %>
+
+   <section class="stat-grid" aria-label="Platform totals">
+     <div class="stat-card">
+       <p class="stat-label text-xs font-mono tracking-wider text-gray-400 uppercase">ACTIVE STUDENTS</p>
+       <p class="stat-value text-4xl font-bold text-[#00ff88]"><%= studentCounts.active %></p>
+       <div class="stat-breakdown">
+         <p class="stat-sub text-sm text-gray-400"><%= studentCounts.pendingSetup %> awaiting setup</p>
+         <p class="stat-sub text-sm text-gray-400"><%= studentCounts.disabled %> disabled</p>
+       </div>
+     </div>
+     <div class="stat-card">
+       <p class="stat-label text-xs font-mono tracking-wider text-gray-400 uppercase">PUBLISHED LESSONS</p>
+       <p class="stat-value text-4xl font-bold text-[#00ff88]"><%= lessonCounts.published %></p>
+       <div class="stat-breakdown">
+         <p class="stat-sub text-sm text-gray-400"><%= lessonCounts.draft %> drafts</p>
+         <p class="stat-sub text-sm text-gray-400"><%= lessonCounts.archived %> archived</p>
+       </div>
+     </div>
+     <div class="stat-card">
+       <p class="stat-label text-xs font-mono tracking-wider text-gray-400 uppercase">PUBLISHED QUIZ VERSIONS</p>
+       <p class="stat-value text-4xl font-bold text-[#00ff88]"><%= quizCounts.published %></p>
+       <div class="stat-breakdown">
+         <p class="stat-sub text-sm text-gray-400"><%= quizCounts.draft %> drafts</p>
+         <p class="stat-sub text-sm text-gray-400"><%= quizCounts.archived %> archived</p>
+       </div>
+     </div>
+     <div class="stat-card">
+       <p class="stat-label text-xs font-mono tracking-wider text-gray-400 uppercase">QUIZ PARTICIPATION</p>
+       <p class="stat-value text-4xl font-bold text-[#00ff88]"><%= participation.participants %></p>
+       <div class="stat-breakdown">
+         <p class="stat-sub text-sm text-gray-400"><%= participation.submittedAttempts %> submitted attempts</p>
+         <p class="stat-sub text-sm text-gray-400"><%= participation.averagePercent %>% average score</p>
+       </div>
+     </div>
+   </section>
+
+  <section class="section-tight">
+    <div class="section-head section-head-inline">
+      <h2>Manage lesson</h2>
+      <a class="link-arrow" href="/admin/lessons">Manage lessons</a>
     </div>
-    <div class="stat-card">
-      <p class="stat-label">Published lessons</p>
-      <p class="stat-value"><%= lessonCounts.published %></p>
-      <p class="muted"><%= lessonCounts.draft %> draft<%= lessonCounts.draft === 1 ? '' : 's' %> · <%= lessonCounts.archived %> archived</p>
-    </div>
-    <div class="stat-card">
-      <p class="stat-label">Published quiz versions</p>
-      <p class="stat-value"><%= quizCounts.published %></p>
-      <p class="muted"><%= quizCounts.draft %> draft · <%= quizCounts.archived %> archived</p>
-    </div>
-    <div class="stat-card">
-      <p class="stat-label">Quiz participation</p>
-      <p class="stat-value"><%= participation.participants %></p>
-      <p class="muted">
-        <% if (participation.submittedAttempts > 0) { %>
-          student<%= participation.participants === 1 ? '' : 's' %> · <%= participation.submittedAttempts %> submitted attempt<%= participation.submittedAttempts === 1 ? '' : 's' %> · average score <%= participation.averagePercent %>%
-        <% } else { %>
-          No submitted attempts yet
-        <% } %>
-      </p>
-    </div>
+    <p class="muted">
+      Every lesson you create gets a private draft the student never sees. Publish a lesson only when the explanations and checkpoint questions are stable, and use archived lessons to retire outdated material without losing the record.
+    </p>
   </section>
 
   <section class="section-tight">
     <div class="section-head section-head-inline">
-      <h2>Recent accounts</h2>
-      <span class="muted">Newest first, maximum 8</span>
+      <h2>Lesson quiz</h2>
+      <a class="link-arrow" href="/admin/quizzes">Manage quizzes</a>
     </div>
-
-    <% if (recentUsers.length === 0) { %>
-      <div class="empty-state">
-        <h3>No accounts yet</h3>
-        <p class="muted">Accounts appear after students register or sign in for the first time.</p>
-      </div>
-    <% } else { %>
-      <div class="table-wrap">
-        <table class="data-table">
-          <caption class="sr-only">Recent CyberSafe accounts</caption>
-          <thead>
-            <tr>
-              <th scope="col">Display name</th>
-              <th scope="col">Username</th>
-              <th scope="col">Email</th>
-              <th scope="col">Role</th>
-              <th scope="col">Status</th>
-              <th scope="col">Joined</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% recentUsers.forEach(function (account) { %>
-              <tr>
-                <td><%= account.displayName || '—' %></td>
-                <td><%= account.username || '—' %></td>
-                <td class="cell-email"><%= account.email %></td>
-                <td><span class="badge"><%= account.role %></span></td>
-                <td><span class="badge badge-<%= account.status === 'active' ? 'success' : (account.status === 'disabled' ? 'danger' : 'warning') %>"><%= account.status %></span></td>
-                <td><%= formatDate(account.createdAt) %></td>
-              </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      </div>
-    <% } %>
+    <p class="muted">
+      Each published lesson may carry one linked quiz. Add questions to the draft version, grade them in preview, then publish when the quiz reflects the current lesson. Each lesson can support one active quiz at a time.
+    </p>
   </section>
 
   <section class="section-tight">
     <div class="section-head section-head-inline">
-      <h2>Recent attempts</h2>
-      <a class="link-arrow" href="/admin/attempts">Open attempt review</a>
+      <h2>Attempt review</h2>
+      <a class="link-arrow" href="/admin/attempts">Review attempts</a>
     </div>
-
-    <% if (recentAttempts.length === 0) { %>
-      <div class="empty-state">
-        <h3>No attempts yet</h3>
-        <p class="muted">Submitted quiz attempts appear here for review, newest first.</p>
-      </div>
-    <% } else { %>
-      <div class="table-wrap">
-        <table class="data-table">
-          <caption class="sr-only">Most recent quiz attempts</caption>
-          <thead>
-            <tr>
-              <th scope="col">Student</th>
-              <th scope="col">Quiz version</th>
-              <th scope="col">Score</th>
-              <th scope="col">Status</th>
-              <th scope="col">Submitted</th>
-              <th scope="col"><span class="sr-only">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            <% recentAttempts.forEach(function (attempt) { %>
-              <tr>
-                <td><%= attempt.studentName || attempt.studentEmail %></td>
-                <td><%= attempt.title %> <span class="muted">v<%= attempt.version %></span></td>
-                <td>
-                  <% if (attempt.status === 'submitted') { %>
-                    <%= attempt.scorePoints %>/<%= attempt.maxPoints %>
-                  <% } else { %>
-                        —
-                  <% } %>
-                </td>
-                <td><span class="badge badge-<%= attempt.status === 'submitted' ? 'success' : 'warning' %>"><%= attempt.status %></span></td>
-                <td><%= formatDateTime(attempt.submittedAt || attempt.startedAt) %></td>
-                <td><a class="link-arrow" href="/admin/attempts/<%= attempt.id %>">Review</a></td>
-              </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      </div>
-    <% } %>
-  </section>
-
-  <section class="split section-tight">
-    <div class="panel">
-      <div class="section-head section-head-inline">
-        <h2>Lessons</h2>
-        <a class="link-arrow" href="/admin/lessons">Manage lessons</a>
-      </div>
-      <% if (lessons.length === 0) { %>
-        <p class="muted">No lessons have been created yet. Run <code>npm run db:seed</code> for the sample curriculum.</p>
-      <% } else { %>
-        <ul class="admin-list">
-          <% lessons.forEach(function (lesson) { %>
-            <li>
-              <span><%= lesson.title %></span>
-              <span class="badge badge-<%= lesson.status === 'published' ? 'success' : 'outline' %>"><%= lesson.status %></span>
-            </li>
-          <% }); %>
-        </ul>
-      <% } %>
-      <p class="muted small"><a class="link-arrow" href="/admin/lessons/new">Create a lesson</a></p>
-    </div>
-
-    <div class="panel">
-      <div class="section-head section-head-inline">
-        <h2>Quizzes</h2>
-        <a class="link-arrow" href="/admin/quizzes">Manage quizzes</a>
-      </div>
-      <% if (quizzes.length === 0) { %>
-        <p class="muted">No quizzes are published yet.</p>
-      <% } else { %>
-        <ul class="admin-list">
-          <% quizzes.forEach(function (quiz) { %>
-            <li>
-              <span><%= quiz.title %> <span class="muted">v<%= quiz.version %></span></span>
-              <a class="link-arrow" href="/admin/quizzes/<%= quiz.id %>">Edit</a>
-            </li>
-          <% }); %>
-        </ul>
-      <% } %>
-      <p class="muted small"><a class="link-arrow" href="/admin/quizzes/new">Create a quiz</a></p>
-    </div>
-  </section>
-
-  <section class="panel panel-muted section-tight">
-    <h2>Administrator responsibilities</h2>
-    <ul class="roadmap">
-      <li>Provision the first administrator with <code>npm run create-admin -- --email you@example.com</code>.</li>
-      <li>Disable an account instead of deleting it, so assessment history stays intact.</li>
-      <li>Never share quiz answer keys or student email addresses outside the institution.</li>
-      <li>Keep <code>.env</code> out of version control and rotate OAuth credentials if they leak.</li>
-    </ul>
+    <p class="muted">
+      Submitted and expired attempts appear here, newest first. Scores are graded server-side at submission and locked once submitted — attempt review is read-only and cannot change results.
+    </p>
   </section>
 </main>
 

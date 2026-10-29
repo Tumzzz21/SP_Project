@@ -2,24 +2,12 @@
 
 <main id="main" class="auth-shell">
   <div class="auth-card">
-    <p class="eyebrow"><%= adminMode ? 'Administrator access' : 'Student access' %></p>
     <h1>Sign in to CyberSafe</h1>
-    <p class="muted auth-intro">
-      <% if (adminMode) { %>
-        Administrators use the same sign-in as students. Your role comes from
-        your account, not from this page.
-      <% } else if (googleConfigured) { %>
-        Use your CyberSafe email and password, or continue with Google.
-      <% } else { %>
-        Use your CyberSafe email and password to continue.
-      <% } %>
-    </p>
 
     <%- include('partials/flash') %>
 
     <form method="post" action="/auth/login" class="form-stack auth-form" data-pending-form novalidate>
       <input type="hidden" name="next" value="<%= next %>">
-      <input type="hidden" name="adminMode" value="<%= adminMode ? '1' : '' %>">
       <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>">
 
       <label class="field<%= errors.email ? ' field-invalid' : '' %>">
@@ -89,30 +77,15 @@
         </svg>
         Continue with Google
       </a>
-      <p class="fine-print">
-        You will be redirected to Google, then returned here. Signing in creates a CyberSafe
-        account the first time and reuses it afterwards.
-      </p>
     <% } %>
 
     <p class="auth-footer auth-links">
-      <% if (!adminMode) { %>
-        <span class="auth-links-row">
-          Don't have an account?
-          <a class="auth-link" href="/register">Sign up</a>
-        </span>
-      <% } else { %>
-        <span class="auth-links-row">
-          Here as a student?
-          <a class="auth-link" href="/login">Student sign in</a>
-        </span>
-      <% } %>
-      <a class="auth-link auth-link-subtle" href="/admin-login">
-        Administrator access? (Separate login)
-      </a>
+      <span class="auth-links-row">
+        Don't have an account?
+        <a class="auth-link" href="/register">Sign up</a>
+      </span>
     </p>
   </div>
 </main>
 
-<script src="/js/auth.js" defer></script>
 <%- include('partials/footer') %>

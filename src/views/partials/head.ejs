@@ -13,7 +13,7 @@
 
   <header class="site-header">
     <div class="shell header-inner">
-      <a class="brand" href="<%= user ? (user.role === 'admin' ? '/admin' : '/dashboard') : '/' %>">
+      <div class="brand">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 3l7 3v6c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V6l7-3z"/>
@@ -21,7 +21,7 @@
           </svg>
         </span>
         <span class="brand-name">CyberSafe</span>
-      </a>
+      </div>
 
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
         <span class="nav-toggle-bar" aria-hidden="true"></span>
@@ -32,18 +32,17 @@
 
       <nav class="primary-nav" id="primary-nav" aria-label="Primary">
         <% if (!user) { %>
-          <a href="/#topics">Topics</a>
-          <a href="/#how-it-works">How it works</a>
+          <a href="/topics">Topics</a>
+          <a href="/how-it-works">How it works</a>
           <a class="nav-cta" href="/login">Sign in</a>
         <% } else { %>
           <% if (user.role === 'admin') { %>
-            <a href="/admin" class="<%= activeNav === 'admin' ? 'is-active' : '' %>"<%= activeNav === 'admin' ? ' aria-current="page"' : '' %>>Admin</a>
+            <a href="/admin" class="<%= activeNav === 'admin' ? 'is-active' : '' %>"<%= activeNav === 'admin' ? ' aria-current="page"' : '' %>>Dashboard</a>
           <% } else { %>
             <a href="/dashboard" class="<%= activeNav === 'dashboard' ? 'is-active' : '' %>"<%= activeNav === 'dashboard' ? ' aria-current="page"' : '' %>>Dashboard</a>
+            <a href="/learn" class="<%= activeNav === 'learn' ? 'is-active' : '' %>"<%= activeNav === 'learn' ? ' aria-current="page"' : '' %>>Learning Center</a>
+            <a href="/quizzes" class="<%= activeNav === 'quizzes' ? 'is-active' : '' %>"<%= activeNav === 'quizzes' ? ' aria-current="page"' : '' %>>Quizzes</a>
           <% } %>
-          <a href="/learn" class="<%= activeNav === 'learn' ? 'is-active' : '' %>"<%= activeNav === 'learn' ? ' aria-current="page"' : '' %>>Learning Center</a>
-          <a href="/quizzes" class="<%= activeNav === 'quizzes' ? 'is-active' : '' %>"<%= activeNav === 'quizzes' ? ' aria-current="page"' : '' %>>Quizzes</a>
-          <a href="/account" class="<%= activeNav === 'account' ? 'is-active' : '' %>"<%= activeNav === 'account' ? ' aria-current="page"' : '' %>>Account</a>
           <%
             const avatarName = String(user.displayName || user.username || user.email || '').trim();
             const avatarInitials = avatarName

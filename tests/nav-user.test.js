@@ -43,6 +43,16 @@ test('the avatar is a dropdown trigger with the user details inside', async () =
   assert.match(response.text, /action="\/auth\/logout"/);
 });
 
+test('the top bar does not repeat the Account link owned by the dropdown', async () => {
+  const { ctx, auth } = await signedIn();
+  const response = await request(ctx.app).get('/dashboard').set('Cookie', auth.cookie);
+
+  // the ordinary Account link is gone, because the dropdown already reaches it
+  assert.ok(!response.text.includes('<a href="/account"'), 'the top bar must not render a separate Account link');
+  // and the page is still reachable through the dropdown item
+  assert.match(response.text, /class="nav-user-item" href="\/account"/);
+});
+
 test('the standalone sign out control is gone from the top bar', async () => {
   const { ctx, auth } = await signedIn();
   const response = await request(ctx.app).get('/dashboard').set('Cookie', auth.cookie);

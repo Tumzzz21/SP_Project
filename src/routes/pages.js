@@ -343,6 +343,21 @@ function createPageRoutes({ db, config }) {
     return res.redirect(303, '/account?notice=display_name_updated');
   });
 
+   // Dedicated pages for Topics and How it works
+   router.get('/topics', (req, res) => {
+     res.render('topics', {
+       pageTitle: 'Topics | CyberSafe',
+       bodyClass: '',
+     });
+   });
+
+   router.get('/how-it-works', (req, res) => {
+     res.render('how-it-works', {
+       pageTitle: 'How it works | CyberSafe',
+       bodyClass: '',
+     });
+   });
+
   return router;
 }
 
