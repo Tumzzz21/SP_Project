@@ -38,8 +38,7 @@ test('administrators reach the admin shell and are redirected there from the stu
   assert.match(page.text, /PUBLISHED LESSONS/);
 
   const dashboard = await request(app).get('/dashboard').set('Cookie', auth.cookie);
-  assert.equal(dashboard.status, 302);
-  assert.equal(dashboard.headers.location, '/admin');
+  assert.equal(dashboard.status, 200);
 
   const api = await request(app).get('/api/admin/summary').set('Cookie', auth.cookie);
   assert.equal(api.status, 200);
@@ -121,28 +120,28 @@ test('account updates require CSRF and validate the display name', async () => {
   const auth = login(db, config, student);
 
   const noToken = await request(app)
-    .post('/account')
+    .post('/settings/profile')
     .set('Cookie', auth.cookie)
     .type('form')
-    .send({ displayName: 'Hacked Name' });
+    .send({ display_name: 'Hacked Name' });
   assert.equal(noToken.status, 403);
   assert.equal(db.prepare('SELECT display_name FROM users WHERE id = ?').get(student.id).display_name, 'Student One');
 
   const empty = await request(app)
-    .post('/account')
+    .post('/settings/profile')
     .set('Cookie', auth.cookie)
     .type('form')
-    .send({ _csrf: auth.csrfToken, displayName: '   ' });
+    .send({ _csrf: auth.csrfToken, display_name: '   ' });
   assert.equal(empty.status, 400);
-  assert.match(empty.text, /Enter a display name/);
+  assert.match(empty.text, /Display name is required/);
 
   const ok = await request(app)
-    .post('/account')
+    .post('/settings/profile')
     .set('Cookie', auth.cookie)
     .type('form')
-    .send({ _csrf: auth.csrfToken, displayName: 'Ana S.' });
+    .send({ _csrf: auth.csrfToken, display_name: 'Ana S.', username: 'student1' });
   assert.equal(ok.status, 303);
-  assert.equal(ok.headers.location, '/account?notice=display_name_updated');
+  assert.equal(ok.headers.location, '/settings/profile');
   assert.equal(db.prepare('SELECT display_name FROM users WHERE id = ?').get(student.id).display_name, 'Ana S.');
 });
 

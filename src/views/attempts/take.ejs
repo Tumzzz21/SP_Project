@@ -54,10 +54,11 @@
               <span><%= question.prompt %></span>
             </legend>
             <ul class="option-list">
-              <% question.options.forEach(function (option) { %>
+              <% question.options.forEach(function (option, idx) { %>
                 <% const inputId = 'q' + question.id + 'o' + option.id; %>
                 <li>
                   <label class="option option-choice" for="<%= inputId %>">
+                    <span class="option-key"><%= String.fromCharCode(65 + idx) %></span>
                     <input
                       type="radio"
                       id="<%= inputId %>"
@@ -65,7 +66,7 @@
                       value="<%= option.id %>"
                       <%= selected.get(question.id) === option.id ? 'checked' : '' %>
                     >
-                    <span><%= option.label %></span>
+                    <span class="option-text"><%= option.label %></span>
                   </label>
                 </li>
               <% }); %>

@@ -7,6 +7,7 @@ const { requireActive, requireStudent, requireGuest, safeNextPath } = require('.
 const { readFlash } = require('../flash');
 const users = require('../db/users');
 const lessonsDb = require('../db/lessons');
+const modulesDb = require('../db/modules');
 const quizzesDb = require('../db/quizzes');
 const attemptsDb = require('../db/attempts');
 const sessionsDb = require('../db/sessions');
@@ -22,13 +23,8 @@ function createPageRoutes({ db, config }) {
   // ---------------------------------------------------------------- public
 
   router.get('/', (req, res) => {
-    const publishedLessons = lessonsDb.listPublished(db);
-    res.render('landing', {
-      pageTitle: 'CyberSafe | Cybersecurity awareness for students',
-      bodyClass: 'page-landing',
-      lessonCount: publishedLessons.length,
-      previewLessons: publishedLessons.slice(0, 3),
-    });
+    if (req.user) return res.redirect(303, '/dashboard');
+    return res.redirect(303, '/login');
   });
 
   router.get('/login', requireGuest, (req, res) => {
@@ -134,7 +130,6 @@ function createPageRoutes({ db, config }) {
   // ------------------------------------------------------------- dashboard
 
   router.get('/dashboard', requireActive, (req, res) => {
-    if (req.user.role === 'admin') return res.redirect(302, '/admin');
 
     const progress = lessonsDb.progressByLesson(db, req.user.id);
     const published = lessonsDb.listPublished(db);
@@ -164,24 +159,7 @@ function createPageRoutes({ db, config }) {
   // --------------------------------------------------------- learning center
 
   router.get('/learn', requireActive, (req, res) => {
-    const category = validateChoice(req.query.category, CATEGORY_KEYS);
-    const lessons = lessonsDb.listPublished(db, { category });
-    const progress = lessonsDb.progressByLesson(db, req.user.id);
-    const summary = lessonsDb.progressSummary(db, req.user.id);
-    const nextLesson = lessonsDb.nextIncomplete(db, req.user.id);
-
-    res.render('learn/index', {
-      pageTitle: 'Learning Center | CyberSafe',
-      bodyClass: 'page-app',
-      activeNav: 'learn',
-      categories: CATEGORIES,
-      activeCategory: category,
-      lessons,
-      progress,
-      summary,
-      nextLesson,
-      flash: readFlash(req),
-    });
+    return res.redirect(303, '/modules');
   });
 
   router.get('/learn/:slug', requireActive, (req, res, next) => {
@@ -189,30 +167,21 @@ function createPageRoutes({ db, config }) {
     if (!lesson) {
       return next(new AppError(404, 'That lesson is not available.', { code: 'lesson_not_found' }));
     }
-    const category = categoryByKey(lesson.category);
-    const progress = lessonsDb.progressByLesson(db, req.user.id).get(lesson.id) || null;
-    const related = lessonsDb
-      .listPublished(db, { category: lesson.category })
-      .filter((item) => item.id !== lesson.id)
-      .slice(0, 3);
-
-    return res.render('learn/show', {
-      pageTitle: `${lesson.title} | CyberSafe`,
-      bodyClass: 'page-app',
-      activeNav: 'learn',
-      lesson,
-      lessonHtml: renderLessonContent(lesson.content),
-      category,
-      progress,
-      related,
-      flash: readFlash(req),
-    });
+    // Redirect to the module containing this lesson.
+    const mod = db.prepare("SELECT m.id FROM modules m JOIN module_items mi ON mi.module_id = m.id WHERE mi.title = ? AND m.status = 'published'").get(lesson.title);
+    if (mod) {
+      return res.redirect(303, '/modules/' + mod.id);
+    }
+    // Fallback: redirect to modules list
+    return res.redirect(303, '/modules');
   });
 
   // ---------------------------------------------------------------- quizzes
 
   router.get('/quizzes', requireActive, (req, res) => {
-    const quizzes = quizzesDb.listPublished(db);
+    const quizzes = req.user.role === 'admin'
+      ? quizzesDb.listVersionsForAdmin(db)
+      : quizzesDb.listPublished(db);
     const counts = quizzesDb.questionCounts(db, quizzes.map((quiz) => quiz.id));
     const adminView = req.user.role === 'admin';
 
@@ -242,6 +211,7 @@ function createPageRoutes({ db, config }) {
       quizzes: cards,
       counts,
       adminView,
+      user: req.user,
       flash: readFlash(req),
     });
   });
@@ -311,53 +281,8 @@ function createPageRoutes({ db, config }) {
   // ---------------------------------------------------------------- account
 
   router.get('/account', requireActive, (req, res) => {
-    res.render('account', {
-      pageTitle: 'Your account | CyberSafe',
-      bodyClass: 'page-app',
-      activeNav: 'account',
-      profile: req.user,
-      activeSessions: sessionsDb.countActiveSessions(db, req.user.id),
-      flashcards: null,
-      flash: readFlash(req),
-      errors: {},
-      values: { displayName: req.user.displayName },
-    });
+    return res.redirect(303, '/settings/profile');
   });
-
-  router.post('/account', requireActive, (req, res) => {
-    const { value, error } = validateDisplayName(req.body.displayName);
-    if (error) {
-      return res.status(400).render('account', {
-        pageTitle: 'Your account | CyberSafe',
-        bodyClass: 'page-app',
-        activeNav: 'account',
-        profile: req.user,
-        activeSessions: sessionsDb.countActiveSessions(db, req.user.id),
-        flash: [],
-        errors: { displayName: error },
-        values: { displayName: value },
-      });
-    }
-
-    users.updateDisplayName(db, req.user.id, value);
-    return res.redirect(303, '/account?notice=display_name_updated');
-  });
-
-   // Dedicated pages for Topics and How it works
-   router.get('/topics', (req, res) => {
-     res.render('topics', {
-       pageTitle: 'Topics | CyberSafe',
-       bodyClass: '',
-     });
-   });
-
-   router.get('/how-it-works', (req, res) => {
-     res.render('how-it-works', {
-       pageTitle: 'How it works | CyberSafe',
-       bodyClass: '',
-     });
-   });
-
   return router;
 }
 

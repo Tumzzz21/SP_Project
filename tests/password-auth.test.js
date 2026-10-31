@@ -242,7 +242,7 @@ test('no development sign-in section or development banner ever renders on pages
   assert.ok(login.text.includes('name="password"'), 'the production form is still there');
 
   // The shared header partial is on every page, so check a public page too.
-  const landing = await request(devCtx.app).get('/');
+  const landing = await request(devCtx.app).get('/login');
   assert.ok(!landing.text.includes('Development mode'));
   assert.ok(!landing.text.includes('AUTH_DEV_MODE'));
 });
@@ -286,7 +286,7 @@ test('the password never appears in page responses after sign-in', async () => {
   const userId = users.findByEmail(db, 'localstudent@example.test').id;
   users.completeSetup(db, userId, { username: 'pwstudent', displayName: 'Password Student' });
 
-  for (const path of ['/dashboard', '/account', '/learn', '/quizzes', '/api/me']) {
+  for (const path of ['/dashboard', '/settings/profile', '/modules', '/quizzes', '/api/me']) {
     const response = await request(app).get(path).set('Cookie', cookie);
     assert.ok(response.status === 200, `${path} should render, got ${response.status}`);
     assert.ok(

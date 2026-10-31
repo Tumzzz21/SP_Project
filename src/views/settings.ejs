@@ -1,0 +1,32 @@
+<%- include('partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Settings</p>
+      <h1>Settings</h1>
+      <p class="muted">Manage your profile, account, security, notifications, and appearance.</p>
+    </div>
+  </header>
+
+  <div class="settings-layout">
+    <%- include('partials/settings-sidebar', { activeSection }) %>
+    <div class="settings-content">
+      <% if (activeSection === 'profile') { %>
+        <%- include('partials/settings-profile') %>
+      <% } else if (activeSection === 'account') { %>
+        <%- include('partials/settings-account') %>
+      <% } else if (activeSection === 'security') { %>
+        <%- include('partials/settings-security') %>
+      <% } else if (activeSection === 'notifications') { %>
+        <%- include('partials/settings-notifications') %>
+      <% } else if (activeSection === 'appearance') { %>
+        <%- include('partials/settings-appearance') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

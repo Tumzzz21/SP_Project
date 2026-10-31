@@ -1,0 +1,59 @@
+<%- include('../../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Admin · Modules</p>
+      <h1>Learning modules</h1>
+      <p class="muted">Create structured learning modules with pages, files, links, and quizzes.</p>
+    </div>
+    <div class="page-head-actions">
+      <a class="btn btn-primary" href="/admin/modules/new">New module</a>
+    </div>
+  </header>
+
+  <%- include('../../partials/admin-tabs') %>
+
+  <section class="section-tight">
+    <% if (modules.length === 0) { %>
+      <div class="empty-state">
+        <h3>No modules yet</h3>
+        <p class="muted">Create your first learning module.</p>
+        <a class="btn btn-primary" href="/admin/modules/new">New module</a>
+      </div>
+    <% } else { %>
+      <div class="table-wrap">
+        <table class="data-table">
+          <caption class="sr-only">Modules</caption>
+          <thead>
+            <tr>
+              <th scope="col">Title</th>
+              <th scope="col">Status</th>
+              <th scope="col">Items</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% modules.forEach(function (m) { %>
+              <tr>
+                <td>
+                  <strong><%= m.title %></strong><br>
+                  <span class="muted small"><%= m.description %></span>
+                </td>
+                <td><span class="badge badge-<%= m.status === 'published' ? 'success' : (m.status === 'hidden' ? 'warning' : 'outline') %>"><%= m.status %></span></td>
+                <td><%= m.item_count || 0 %></td>
+                <td>
+                  <a class="link-arrow" href="/admin/modules/<%= m.id %>">Edit</a>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('../../partials/footer') %>

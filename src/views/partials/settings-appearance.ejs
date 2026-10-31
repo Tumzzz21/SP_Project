@@ -1,0 +1,36 @@
+<section class="settings-section">
+  <h2>Appearance</h2>
+  <p class="muted">Customize how CyberSafe looks and feels.</p>
+
+  <form method="post" action="/settings/appearance" class="form-stack settings-form" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <div class="field">
+      <label class="field-label" for="language">Language</label>
+      <select id="language" name="language">
+        <option value="en" <%= user.language === 'en' ? 'selected' : '' %>>English</option>
+        <option value="es" <%= user.language === 'es' ? 'selected' : '' %>>Spanish</option>
+        <option value="fr" <%= user.language === 'fr' ? 'selected' : '' %>>French</option>
+      </select>
+      <p class="field-help">Choose your preferred language.</p>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="text_size">Text size</label>
+      <select id="text_size" name="text_size">
+        <option value="small" <%= user.text_size === 'small' ? 'selected' : '' %>>Small</option>
+        <option value="medium" <%= (user.text_size === 'medium' || !user.text_size) ? 'selected' : '' %>>Medium</option>
+        <option value="large" <%= user.text_size === 'large' ? 'selected' : '' %>>Large</option>
+      </select>
+      <p class="field-help">Adjust the text size across the site.</p>
+    </div>
+
+    <button class="btn btn-primary btn-block" type="submit">Save appearance</button>
+  </form>
+
+  <% if (flash && flash.length) { %>
+    <% flash.forEach(function (item) { %>
+      <div class="notice notice-<%= item.type %>"><%= item.message %></div>
+    <% }); %>
+  <% } %>
+</section>

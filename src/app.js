@@ -5,6 +5,7 @@ const express = require('express');
 
 const { CATEGORIES } = require('./content/categories');
 const { sessionMiddleware } = require('./auth/session');
+const { requireActive } = require('./auth/guards');
 const { createGoogleClient } = require('./auth/oidc');
 const { csrfProtection } = require('./middleware/csrf');
 const { requestId, securityHeaders, noStore, createAuthLimiter, createApiLimiter } = require('./middleware/security');
@@ -15,7 +16,9 @@ const { createPageRoutes } = require('./routes/pages');
 const { createLessonRoutes } = require('./routes/lessons');
 const { createAttemptRoutes } = require('./routes/attempts');
 const { createAdminRoutes } = require('./routes/admin');
+const { createModuleRoutes } = require('./routes/modules');
 const { createApiRoutes } = require('./routes/api');
+const { createSettingsRoutes } = require('./routes/settings');
 
 const VIEWS_DIR = path.join(__dirname, 'views');
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -71,6 +74,16 @@ function createApp({ config, db, oidc = null, logger = console }) {
     }),
   );
 
+  const UPLOADS_DIR = path.join(__dirname, '..', 'public', 'uploads');
+  app.use(
+    '/uploads',
+    express.static(UPLOADS_DIR, {
+      maxAge: config.isProduction ? '1h' : 0,
+      index: false,
+      redirect: false,
+    }),
+  );
+
   app.use(express.urlencoded({ extended: false, limit: '32kb' }));
   app.use(express.json({ limit: '32kb' }));
 
@@ -114,7 +127,9 @@ function createApp({ config, db, oidc = null, logger = console }) {
   app.use(createAttemptRoutes({ db }));
   app.use(createAdminRoutes({ db }));
   app.use(createApiRoutes({ db }));
+  app.use('/settings', [requireActive], createSettingsRoutes({ db }));
 
+  app.use(createModuleRoutes({ db }));
   app.use(notFoundHandler);
   app.use(errorHandler({ logger }));
 

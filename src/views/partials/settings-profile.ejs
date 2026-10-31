@@ -1,0 +1,122 @@
+<section class="settings-section">
+  <!-- Summary card -->
+  <div class="profile-summary">
+    <div class="profile-avatar">
+      <%
+        const _name = String(user.displayName || user.username || user.email || '').trim();
+        const _initials = _name ? _name.split(/\s+/).slice(0, 2).map(function (p) { return p.charAt(0); }).join('').toUpperCase() : '?';
+      %>
+      <% if (user.avatar_url) { %>
+        <img src="<%= user.avatar_url %>" alt="Profile photo" class="profile-avatar-img">
+      <% } else { %>
+        <span class="profile-avatar-initials"><%= _initials %></span>
+      <% } %>
+    </div>
+    <div class="profile-summary-info">
+      <h2 class="profile-name"><%= user.displayName || user.username || 'User' %></h2>
+      <% if (user.username) { %>
+        <p class="profile-username">@<%= user.username %></p>
+      <% } %>
+      <span class="badge <%= user.role === 'admin' ? 'badge-success' : 'badge-outline' %>"><%= user.role %></span>
+      <p class="muted profile-member-since">Member since <%= formatDate ? formatDate(user.createdAt) : user.createdAt %></p>
+    </div>
+  </div>
+
+  <!-- Photo upload -->
+  <form method="post" action="/settings/profile/photo" class="form-stack settings-form" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field">
+      <label class="field-label" for="avatar">Profile photo</label>
+      <input id="avatar" name="avatar" type="file" accept="image/png,image/jpeg,image/webp" required>
+      <p class="field-help" hidden>PNG, JPEG, or WebP. Max 2 MB. Resized to 256x256.</p>
+    </div>
+    <button class="btn btn-primary btn-block" type="submit">Upload photo</button>
+  </form>
+
+  <% if (user.avatar_url) { %>
+    <form method="post" action="/settings/profile/remove-photo" class="form-stack" novalidate style="margin-top: var(--space-sm);">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-ghost btn-block" type="submit">Remove photo</button>
+    </form>
+  <% } %>
+
+  <!-- Read-only info -->
+  <div class="profile-readonly">
+    <div class="profile-readonly-row">
+      <span class="profile-readonly-label">Email</span>
+      <span class="profile-readonly-value"><%= user.email %></span>
+    </div>
+    <div class="profile-readonly-row">
+      <span class="profile-readonly-label">Role</span>
+      <span class="profile-readonly-value"><%= user.role %></span>
+    </div>
+    <div class="profile-readonly-row">
+      <span class="profile-readonly-label">Last sign-in</span>
+      <span class="profile-readonly-value"><%= user.lastLoginAt ? (formatDate ? formatDate(user.lastLoginAt) : user.lastLoginAt) : 'Never' %></span>
+    </div>
+  </div>
+
+  <!-- Edit form -->
+  <form method="post" action="/settings/profile" class="form-stack settings-form" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <div class="field<%= errors.display_name ? ' field-invalid' : '' %>">
+      <label class="field-label" for="display_name">Display Name</label>
+      <input
+        id="display_name"
+        name="display_name"
+        type="text"
+        value="<%= values.display_name || '' %>"
+        maxlength="50"
+        required
+        aria-describedby="<%= errors.display_name ? 'display-name-error' : 'display-name-help' %>"
+      >
+      <% if (errors.display_name) { %>
+        <span class="field-error" id="display-name-error"><%= errors.display_name %></span>
+      <% } else { %>
+        <span class="field-help" id="display-name-help" hidden>Your display name shown to others.</span>
+      <% } %>
+    </div>
+
+    <div class="field<%= errors.username ? ' field-invalid' : '' %>">
+      <label class="field-label" for="username">Username</label>
+      <input
+        id="username"
+        name="username"
+        type="text"
+        value="<%= values.username || '' %>"
+        maxlength="30"
+        required
+        aria-describedby="<%= errors.username ? 'username-error' : 'username-help' %>"
+      >
+      <% if (errors.username) { %>
+        <span class="field-error" id="username-error"><%= errors.username %></span>
+      <% } else { %>
+        <span class="field-help" id="username-help" hidden>3-30 characters, letters, numbers, underscore. You can change your username.</span>
+      <% } %>
+    </div>
+
+    <div class="field<%= errors.bio ? ' field-invalid' : '' %>">
+      <label class="field-label" for="bio">Bio (optional)</label>
+      <textarea
+        id="bio"
+        name="bio"
+        maxlength="200"
+        aria-describedby="<%= errors.bio ? 'bio-error' : 'bio-help' %>"
+      ><%= values.bio || '' %></textarea>
+      <% if (errors.bio) { %>
+        <span class="field-error" id="bio-error"><%= errors.bio %></span>
+      <% } else { %>
+        <span class="field-help" id="bio-help" hidden>Tell others a bit about yourself. Max 200 characters.</span>
+      <% } %>
+    </div>
+
+    <button class="btn btn-primary btn-block" type="submit">Save changes</button>
+  </form>
+
+  <% if (flash && flash.length) { %>
+    <% flash.forEach(function (item) { %>
+      <div class="notice notice-<%= item.type %>"><%= item.message %></div>
+    <% }); %>
+  <% } %>
+</section>

@@ -322,10 +322,6 @@ function createAuthRoutes({ db, config, oidc, authLimiter }) {
         }
 
         user = users.recordLogin(db, user.id, { email, emailVerified: true });
-        // Make dev login accounts admins for easy testing
-        if (user.role !== 'admin') {
-          users.setRole(db, user.id, 'admin');
-        }
         const session = sessions.createSession(db, {
           userId: user.id,
           ttlHours: config.session.ttlHours,

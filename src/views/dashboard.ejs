@@ -5,15 +5,18 @@
 
   <header class="page-head">
     <div>
-      <p class="eyebrow eyebrow-shield"><%- include('partials/icon', { name: 'shield', size: 14 }) %> Student dashboard</p>
-      <h1>Welcome back, <%= user.displayName %></h1>
+      <% if (user.role !== 'admin') { %><p class="eyebrow eyebrow-shield"><%- include('partials/icon', { name: 'shield', size: 14 }) %> Student dashboard</p><% } %>
+      <h1><%= user.role === 'admin' ? 'Welcome back' : 'Welcome back, ' + user.displayName %></h1>
       <p class="muted">
         Pick up where you left off, or review a completed quiz. Signed in as
         <strong><%= user.username %></strong> (<%= user.email %>).
       </p>
     </div>
     <div class="page-head-actions">
-      <a class="btn btn-primary" href="/learn">Open Learning Center</a>
+      <a class="btn btn-primary" href="/modules">Open Modules</a>
+      <% if (user.role === 'admin') { %>
+        <a class="btn btn-secondary" href="/admin">Admin Console</a>
+      <% } %>
     </div>
   </header>
 
@@ -94,9 +97,7 @@
           Continue lesson <%- include('partials/icon', { name: 'arrow', size: 16 }) %>
         </a>
       </div>
-      <div class="continue-hero-art" aria-hidden="true">
-        <%- include('partials/icon', { name: 'shield', size: 140 }) %>
-      </div>
+
     </section>
   <% } else if (summary.publishedLessons > 0) { %>
     <section class="continue-hero continue-hero-done" aria-label="Lesson progress">
@@ -109,7 +110,7 @@
         </div>
         <h2>Every published lesson is marked complete</h2>
         <p class="muted continue-hero-summary">Revisit any lesson to review it; completion can be undone from the lesson page.</p>
-        <a class="btn btn-secondary btn-hero" href="/learn">
+        <a class="btn btn-secondary btn-hero" href="/modules">
           Review lessons <%- include('partials/icon', { name: 'arrow', size: 16 }) %>
         </a>
       </div>
@@ -203,7 +204,7 @@
   <section class="section-tight">
     <div class="section-head-inline">
       <h2>Continue learning</h2>
-      <a class="link-arrow" href="/learn">All lessons <span aria-hidden="true">&rarr;</span></a>
+      <a class="link-arrow" href="/modules">All modules <span aria-hidden="true">&rarr;</span></a>
     </div>
 
     <% if (lessons.length === 0) { %>

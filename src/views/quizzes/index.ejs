@@ -9,14 +9,18 @@
       <h1><%= adminView ? 'Quiz catalogue' : 'Check what you have learned' %></h1>
       <p class="muted">
         <%= adminView
-          ? 'Published quiz versions as students see them. Editing tools arrive in Phase 4.'
+          ? 'Published quiz versions as students see them. Check what you have learned.'
           : 'Short checks with server-side grading and explanations after you submit.' %>
       </p>
     </div>
-    <% if (!adminView) { %>
-      <div class="page-head-actions">
-        <a class="btn btn-secondary" href="/quizzes/history">Your quiz history</a>
-      </div>
+    <% if (adminView) { %>
+    <div class="page-head-actions">
+      <a class="btn btn-primary btn-sm" href="/admin/quizzes/new">+ New quiz</a>
+    </div>
+    <% } else { %>
+    <div class="page-head-actions">
+      <a class="btn btn-secondary" href="/quizzes/history">Your quiz history</a>
+    </div>
     <% } %>
   </header>
 
@@ -43,6 +47,20 @@
           <div class="lesson-meta">
             <span class="badge"><%= quiz.status %></span>
             <span class="muted">Version <%= quiz.version %></span>
+            <% if (adminView) { %>
+            <a href="/admin/quizzes/<%= quiz.id %>" class="btn btn-ghost btn-sm">Edit</a>
+            <% if (quiz.status === 'draft') { %>
+            <form method="post" action="/admin/quizzes/<%= quiz.id %>/publish">
+              <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+              <button class="btn btn-ghost btn-sm" type="submit">Publish</button>
+            </form>
+            <% } else if (quiz.status === 'published') { %>
+            <form method="post" action="/admin/quizzes/<%= quiz.id %>/archive">
+              <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+              <button class="btn btn-ghost btn-sm" type="submit">Archive</button>
+            </form>
+            <% } %>
+            <% } %>
           </div>
           <h3><a href="/quizzes/<%= quiz.slug %>"><%= quiz.title %></a></h3>
           <p class="muted"><%= quiz.description %></p>
@@ -60,7 +78,7 @@
                 <% } %>
               </span>
               <a class="link-arrow" href="/quizzes/<%= quiz.slug %>">
-                <%= quiz.openAttemptId ? 'Resume' : quiz.attempts > 0 ? 'Try again' : 'Start' %>
+                <%= quiz.openAttemptId ? 'Resume' : quiz.attempts > 0 ? 'Try again' : 'Start quiz' %>
                 <span aria-hidden="true">→</span>
               </a>
             <% } %>

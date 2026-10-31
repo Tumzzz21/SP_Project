@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= user ? (user.language || 'en') : 'en' %>" class="lang-<%= user ? (user.language || 'en') : 'en' %> text-<%= user ? (user.text_size || 'medium') : 'medium' %>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,7 +13,7 @@
 
   <header class="site-header">
     <div class="shell header-inner">
-      <div class="brand">
+      <a class="brand" href="<%= user ? (user.role === 'admin' ? '/admin' : '/dashboard') : '/login' %>">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 3l7 3v6c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V6l7-3z"/>
@@ -21,7 +21,7 @@
           </svg>
         </span>
         <span class="brand-name">CyberSafe</span>
-      </div>
+      </a>
 
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
         <span class="nav-toggle-bar" aria-hidden="true"></span>
@@ -32,15 +32,16 @@
 
       <nav class="primary-nav" id="primary-nav" aria-label="Primary">
         <% if (!user) { %>
-          <a href="/topics">Topics</a>
-          <a href="/how-it-works">How it works</a>
-          <a class="nav-cta" href="/login">Sign in</a>
+                  <a class="nav-cta" href="/login">Sign in</a>
         <% } else { %>
           <% if (user.role === 'admin') { %>
-            <a href="/admin" class="<%= activeNav === 'admin' ? 'is-active' : '' %>"<%= activeNav === 'admin' ? ' aria-current="page"' : '' %>>Dashboard</a>
+            <a href="/dashboard" class="<%= activeNav === 'dashboard' ? 'is-active' : '' %>"<%= activeNav === 'dashboard' ? ' aria-current="page"' : '' %>>Dashboard</a>
+            <a href="/modules" class="<%= activeNav === 'modules' ? 'is-active' : '' %>"<%= activeNav === 'modules' ? ' aria-current="page"' : '' %>>Modules</a>
+            <a href="/quizzes" class="<%= activeNav === 'quizzes' ? 'is-active' : '' %>"<%= activeNav === 'quizzes' ? ' aria-current="page"' : '' %>>Quizzes</a>
+            <a href="/admin" class="<%= activeNav === 'admin' ? 'is-active' : '' %>"<%= activeNav === 'admin' ? ' aria-current="page"' : '' %>>Admin</a>
           <% } else { %>
             <a href="/dashboard" class="<%= activeNav === 'dashboard' ? 'is-active' : '' %>"<%= activeNav === 'dashboard' ? ' aria-current="page"' : '' %>>Dashboard</a>
-            <a href="/learn" class="<%= activeNav === 'learn' ? 'is-active' : '' %>"<%= activeNav === 'learn' ? ' aria-current="page"' : '' %>>Learning Center</a>
+            <a href="/modules" class="<%= activeNav === 'modules' ? 'is-active' : '' %>"<%= activeNav === 'modules' ? ' aria-current="page"' : '' %>>Modules</a>
             <a href="/quizzes" class="<%= activeNav === 'quizzes' ? 'is-active' : '' %>"<%= activeNav === 'quizzes' ? ' aria-current="page"' : '' %>>Quizzes</a>
           <% } %>
           <%
@@ -51,28 +52,48 @@
           %>
           <div class="nav-user" data-user-menu>
             <button
+              id="nav-avatar-btn"
               class="nav-avatar"
               type="button"
               aria-haspopup="true"
               aria-expanded="false"
               aria-controls="nav-user-panel"
-              data-user-menu-toggle
               title="<%= avatarName %>"
             >
-              <span aria-hidden="true"><%= avatarInitials %></span>
+              <% if (user.avatar_url) { %>
+                <img src="<%= user.avatar_url %>" alt="" class="nav-avatar-img" aria-hidden="true">
+              <% } else { %>
+                <span aria-hidden="true"><%= avatarInitials %></span>
+              <% } %>
               <span class="sr-only">Account menu for <%= avatarName %></span>
             </button>
 
-            <div class="nav-user-panel" id="nav-user-panel" data-user-menu-panel hidden>
+            <div class="profile-menu" id="nav-user-panel">
               <div class="nav-user-head">
-                <p class="nav-user-name"><%= user.displayName %></p>
-                <p class="nav-user-email"><%= user.email %></p>
+                <div class="nav-user-avatar">
+                  <% if (user.avatar_url) { %>
+                    <img src="<%= user.avatar_url %>" alt="" class="nav-user-avatar-img">
+                  <% } else { %>
+                    <%= avatarInitials %>
+                  <% } %>
+                </div>
+                <div class="nav-user-info">
+                  <p class="nav-user-name"><%= user.displayName %></p>
+                  <p class="nav-user-email"><%= user.email %></p>
+                </div>
               </div>
               <div class="nav-user-divider" role="separator"></div>
-              <a class="nav-user-item" href="/account">
+              <a class="nav-user-item" href="/settings/profile">
                 <%- include('icon', { name: 'settings', size: 16 }) %>
-                <span>Account Settings</span>
+                <span>Settings</span>
               </a>
+              <% if (user.role === 'admin') { %>
+                <a class="nav-user-item" href="/admin">
+                  <%- include('icon', { name: 'shield', size: 16 }) %>
+                  <span>Admin Console</span>
+                </a>
+              <% } %>
+              <div class="nav-user-divider" role="separator"></div>
               <form method="post" action="/auth/logout" class="nav-user-form">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button class="nav-user-item nav-user-signout" type="submit">
@@ -86,4 +107,3 @@
       </nav>
     </div>
   </header>
-

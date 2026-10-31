@@ -147,10 +147,14 @@ function answersForReview(db, attemptId) {
               qq.explanation,
               aq.selected_option_id   AS selectedOptionId,
               so.label                AS selectedLabel,
+               (SELECT position FROM quiz_options WHERE id = aq.selected_option_id) AS selectedPosition,
               aq.is_correct           AS isCorrect,
               (SELECT label FROM quiz_options
                 WHERE question_id = qq.id AND is_correct = 1
-                ORDER BY position LIMIT 1) AS correctLabel
+                ORDER BY position LIMIT 1) AS correctLabel,
+               (SELECT position FROM quiz_options
+                 WHERE question_id = qq.id AND is_correct = 1
+                 ORDER BY position LIMIT 1) AS correctPosition
          FROM attempt_answers aq
          JOIN quiz_questions qq ON qq.id = aq.question_id
          LEFT JOIN quiz_options so ON so.id = aq.selected_option_id

@@ -227,8 +227,8 @@ function parseQuestionForm(body) {
       errors.push(`${label}: question prompt must be 500 characters or fewer.`);
       continue;
     }
-    if (options.length < 2) {
-      errors.push(`${label}: provide at least two answer options.`);
+    if (options.length !== 4) {
+      errors.push(`${label}: provide exactly four answer options.`);
       continue;
     }
     if (options.some((option) => option.length > 160)) {
@@ -241,8 +241,8 @@ function parseQuestionForm(body) {
     }
 
     // The correct marker must point at an option slot that actually has a label.
-    if (!Number.isInteger(correctSlot) || correctSlot < 0 || correctSlot >= optionLabels.length) {
-      errors.push(`${label}: choose which option is correct.`);
+    if (!Number.isInteger(correctSlot) || correctSlot < 0 || correctSlot > 3) {
+      errors.push(`${label}: choose which option is correct (A, B, C, or D).`);
       continue;
     }
     if (!optionLabels[correctSlot]) {
@@ -256,7 +256,7 @@ function parseQuestionForm(body) {
       options: optionLabels.map((optionLabel, slot) => ({
         label: optionLabel,
         isCorrect: slot === correctSlot,
-      })).filter((option) => option.label !== ''),
+      })),
     });
   }
 

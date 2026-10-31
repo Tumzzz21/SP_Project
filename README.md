@@ -37,7 +37,7 @@ Optional sample content (five lessons, two quizzes, marked as sample material):
 npm run db:seed
 ```
 
-The sign-in page shows only production authentication options: the email/password form and, when Google credentials are configured, the **Continue with Google** button. No development controls or server-configuration text ever appear on it. With `AUTH_DEV_MODE=true` (the default in `.env.example`) a hidden `POST /auth/dev-login` route exists for tests and automation only; it is refused when `NODE_ENV=production`, does not exist unless the flag is on, and never creates an admin. The real Google flow still sends first-time users through `/setup`.
+The sign-in page shows only production authentication options: the email/password form and, when Google credentials are configured, the **Continue with Google** button. No development controls or server-configuration text ever appear on it. With `AUTH_DEV_MODE=true` a hidden `POST /auth/dev-login` route exists for tests and automation only; it is refused when `NODE_ENV=production`, does not exist unless the flag is on, and never creates an admin. The real Google flow still sends first-time users through `/setup`.
 
 ### Test accounts (local only)
 
