@@ -95,5 +95,56 @@ for(const mid of s.modules){const items=modulesDb.listItems(db,mid);for(const it
 if(s.quiz){const quiz=db.prepare('SELECT * FROM quizzes WHERE slug=?').get(s.quiz.slug);if(quiz){const ex=db.prepare('SELECT id FROM quiz_attempts WHERE user_id=? AND quiz_id=?').get(u.id,quiz.id);if(!ex){const att=attemptsDb.create(db,{userId:u.id,quizId:quiz.id,maxPoints:s.quiz.max});const qs=db.prepare('SELECT id FROM quiz_questions WHERE quiz_id=?').all(quiz.id);db.prepare(`UPDATE quiz_attempts SET status='submitted', score_points=?, max_points=?, submitted_at=? WHERE id=?`).run(s.quiz.score,s.quiz.max,now,att.id);}}}
 db.prepare('UPDATE users SET last_login_at=? WHERE email IN (?,?,?,?,?)').run(now,...demoStudents.map(x=>x.email));
 console.log('Demo student:',s.displayName);}
+const extraPages = {
+  'Phishing awareness': { title: 'Key takeaways: phishing', content: 'Phishing is the most common way accounts are stolen. Slow down, verify the sender and URL, and never enter credentials from a link.\n\nKey takeaways:\n- Pause before you click.\n- Check the real sender address and domain.\n- Type important URLs yourself.\n- Report suspicious messages to IT.' },
+  'Password security': { title: 'Key takeaways: passwords', content: 'Strong, unique passwords plus MFA stop most account takeovers. A password manager makes this practical.\n\nKey takeaways:\n- Use 12+ character passphrases.\n- Never reuse passwords.\n- Enable MFA on important accounts.\n- Store passwords in a manager.' },
+  'Online scams': { title: 'Key takeaways: scams', content: 'If an offer is too good to be true, it probably is. Verify independently and never pay to get a job or prize.\n\nKey takeaways:\n- Verify organisations on their official sites.\n- Never pay fees for jobs or scholarships.\n- Use platform payments and meet in public.\n- Report scams to help others.' },
+  'Data privacy': { title: 'Key takeaways: privacy', content: 'Apps and posts collect more than you think. Minimise permissions and think before sharing.\n\nKey takeaways:\n- Grant only needed permissions.\n- Keep accounts and location private.\n- Read privacy policies.\n- Request deletion when leaving a service.' },
+  'Responsible internet use': { title: 'Key takeaways: ethics', content: 'Online actions have real consequences. Be respectful, verify, and credit others work.\n\nKey takeaways:\n- Be kind and respectful online.\n- Verify before sharing.\n- Report harassment.\n- Cite sources and respect copyright.' },
+};
+for (const t of topics) {
+  const mod = db.prepare('SELECT id FROM modules WHERE title = ?').get(t.title);
+  if (!mod) continue;
+  const items = modulesDb.listItems(db, mod.id);
+  const titles = new Set(items.map(i => i.title));
+  const ep = extraPages[t.title];
+  if (ep && !titles.has(ep.title)) {
+    modulesDb.addItem(db, { moduleId: mod.id, type: 'page', title: ep.title, content: ep.content, sortOrder: items.length });
+  }
+}
+console.log('Expanded modules to 4 pages.');
+const extraQs = {
+  'phishing-demo': [
+    { prompt: 'Which URL is most likely a phishing page?', explanation: 'The domain does not match the real brand.', options: [{label:'https://paypa1.com/login',correct:true},{label:'https://paypal.com',correct:false},{label:'https://www.paypal.com',correct:false},{label:'https://paypal.com/security',correct:false}] },
+    { prompt: 'What does HTTPS alone guarantee?', explanation: 'HTTPS encrypts traffic but does not prove the site is legitimate.', options: [{label:'Encrypted connection, not legitimacy',correct:true},{label:'The site is safe',correct:false},{label:'The sender is verified',correct:false},{label:'No phishing risk',correct:false}] },
+  ],
+  'passwords-demo': [
+    { prompt: 'A good passphrase is:', explanation: 'Length and randomness matter most.', options: [{label:'Four or more random words',correct:true},{label:'Your pet name plus a number',correct:false},{label:'A single dictionary word',correct:false},{label:'Your birthday',correct:false}] },
+    { prompt: 'Where should backup codes be stored?', explanation: 'Offline and safe from loss.', options: [{label:'Offline in a secure place',correct:true},{label:'In your email inbox',correct:false},{label:'On a public note',correct:false},{label:'In a chat message',correct:false}] },
+  ],
+  'scams-demo': [
+    { prompt: 'A recruiter asks for your bank details to "set up pay". You should:', explanation: 'Real employers do not need bank details before hiring.', options: [{label:'Refuse and verify the employer',correct:true},{label:'Send the details',correct:false},{label:'Send partial details',correct:false},{label:'Ignore but keep chatting',correct:false}] },
+    { prompt: 'A message says you won a prize but must pay a fee. This is:', explanation: 'Upfront fees for prizes are a scam.', options: [{label:'A scam',correct:true},{label:'A real contest',correct:false},{label:'A tax',correct:false},{label:'Normal',correct:false}] },
+  ],
+  'privacy-demo': [
+    { prompt: 'Which reduces tracking by apps?', explanation: 'Limiting permissions limits data collection.', options: [{label:'Deny unnecessary permissions',correct:true},{label:'Allow all permissions',correct:false},{label:'Use a VPN only',correct:false},{label:'Share more data',correct:false}] },
+    { prompt: 'Before posting a photo, consider:', explanation: 'Photos can reveal location and identity.', options: [{label:'Whether it reveals location or identity',correct:true},{label:'How many likes it will get',correct:false},{label:'The filter used',correct:false},{label:'The caption length',correct:false}] },
+  ],
+  'ethics-demo': [
+    { prompt: 'A friend shares a private photo of someone without consent. You should:', explanation: 'Respect privacy and report abuse.', options: [{label:'Not share it and report the abuse',correct:true},{label:'Share it further',correct:false},{label:'Laugh and move on',correct:false},{label:'Save it',correct:false}] },
+    { prompt: 'Fair use of online content means:', explanation: 'Respect licenses and credit creators.', options: [{label:'Respecting licenses and crediting creators',correct:true},{label:'Copying anything',correct:false},{label:'Sharing without credit',correct:false},{label:'Ignoring copyright',correct:false}] },
+  ],
+};
+for (const [slug, qs] of Object.entries(extraQs)) {
+  const quiz = db.prepare('SELECT * FROM quizzes WHERE slug = ? AND version = 1').get(slug);
+  if (!quiz) continue;
+  for (const q of qs) {
+    if (db.prepare('SELECT 1 FROM quiz_questions WHERE quiz_id = ? AND prompt = ?').get(quiz.id, q.prompt)) continue;
+    const pos = db.prepare('SELECT COALESCE(MAX(position),0)+1 AS p FROM quiz_questions WHERE quiz_id=?').get(quiz.id).p;
+    const qid = db.prepare('INSERT INTO quiz_questions (quiz_id,position,prompt,explanation,created_at) VALUES (?,?,?,?,?)').run(quiz.id, pos, q.prompt, q.explanation, now).lastInsertRowid;
+    q.options.forEach((o, i) => db.prepare('INSERT INTO quiz_options (question_id,position,label,is_correct) VALUES (?,?,?,?)').run(qid, i+1, o.label, o.correct?1:0));
+  }
+}
+console.log('Expanded quizzes to 8 questions.');
 console.log('Seed demo complete.');
 db.close();

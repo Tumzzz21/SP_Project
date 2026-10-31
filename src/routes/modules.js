@@ -59,7 +59,21 @@ function createModuleRoutes({ db }) {
 
   // Mark item complete
   router.post('/modules/:id/items/:itemId/complete', requireActive, (req, res) => {
+    const csrfModule = require('../middleware/csrf');
+    const provided = (req.body && req.body._csrf) || req.get('x-csrf-token') || '';
+    if (!csrfModule.safeEqual(req.session ? req.session.csrfToken : '', provided)) {
+      return res.status(403).send('Forbidden');
+    }
+    const id = Number(req.params.id);
+    const mod = modulesDb.findById(db, id);
+    if (!mod || mod.status !== 'published') {
+      return res.status(404).send('Not found');
+    }
     const itemId = Number(req.params.itemId);
+    const item = modulesDb.findItemById(db, itemId);
+    if (!item || item.module_id !== id) {
+      return res.status(404).send('Not found');
+    }
     modulesDb.markComplete(db, req.user.id, itemId);
     return res.redirect(303, '/modules/' + req.params.id);
   });
