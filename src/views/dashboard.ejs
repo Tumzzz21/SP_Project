@@ -5,11 +5,10 @@
 
   <header class="page-head">
     <div>
-      <% if (user.role !== 'admin') { %><p class="eyebrow eyebrow-shield"><%- include('partials/icon', { name: 'shield', size: 14 }) %> Student dashboard</p><% } %>
-      <h1><%= user.role === 'admin' ? 'Welcome back' : 'Welcome back, ' + user.displayName %></h1>
+      <p class="eyebrow eyebrow-shield"><%- include('partials/icon', { name: 'shield', size: 14 }) %> <%= user.role === 'admin' ? 'Admin dashboard' : 'Student dashboard' %></p>
+      <h1><%= user.role === 'admin' ? 'Your learning' : 'Welcome back, ' + user.displayName %></h1>
       <p class="muted">
-        Pick up where you left off, or review a completed quiz. Signed in as
-        <strong><%= user.username %></strong> (<%= user.email %>).
+        Pick up where you left off. Signed in as <strong><%= user.username %></strong> (<%= user.email %>).
       </p>
     </div>
     <div class="page-head-actions">
@@ -20,50 +19,57 @@
     </div>
   </header>
 
+  <% if (nextItem && nextModule) { %>
+    <section class="continue-hero" aria-label="Continue where you left off">
+      <div class="continue-hero-body">
+        <div class="continue-hero-meta">
+          <p class="eyebrow">Continue where you left off</p>
+          <span class="tag-pill"><%- include('partials/icon', { name: 'modules', size: 13 }) %> <%= nextModule.title %></span>
+        </div>
+        <h2><%= nextItem.title %></h2>
+        <p class="muted continue-hero-summary"><%= nextItem.type ? nextItem.type.charAt(0).toUpperCase() + nextItem.type.slice(1) : 'Item' %> in <%= nextModule.title %></p>
+        <a class="btn btn-primary btn-hero" href="/modules/<%= nextModule.id %>">
+          Continue <%- include('partials/icon', { name: 'arrow', size: 16 }) %>
+        </a>
+      </div>
+    </section>
+  <% } else if (modules.length > 0) { %>
+    <section class="continue-hero continue-hero-done" aria-label="All complete">
+      <div class="continue-hero-body">
+        <div class="continue-hero-meta">
+          <p class="eyebrow">All caught up</p>
+          <span class="tag-pill tag-pill--done"><%- include('partials/icon', { name: 'check', size: 13 }) %> Everything complete</span>
+        </div>
+        <h2>All module items complete</h2>
+        <p class="muted continue-hero-summary">Revisit any module to review it.</p>
+        <a class="btn btn-secondary btn-hero" href="/modules">Review modules <%- include('partials/icon', { name: 'arrow', size: 16 }) %></a>
+      </div>
+    </section>
+  <% } %>
+
   <section class="stat-grid" aria-label="Your progress">
     <div class="stat-card stat-card--green">
       <div class="stat-head">
-        <span class="stat-icon" aria-hidden="true"><%- include('partials/icon', { name: 'lessons', size: 20 }) %></span>
-        <p class="stat-label">Lessons completed</p>
+        <span class="stat-icon" aria-hidden="true"><%- include('partials/icon', { name: 'modules', size: 20 }) %></span>
+        <p class="stat-label">Modules completed</p>
       </div>
-      <p class="stat-value"><%= summary.completedLessons %><span class="stat-suffix">/<%= summary.publishedLessons %></span></p>
-      <p class="muted">Finished reading across the published lessons.</p>
+      <p class="stat-value"><%= completedModules %><span class="stat-suffix">/<%= modules.length %></span></p>
+      <p class="muted">Finished modules across published content.</p>
     </div>
 
     <div class="stat-card stat-card--cyan">
       <div class="stat-head">
         <span class="stat-icon" aria-hidden="true"><%- include('partials/icon', { name: 'progress', size: 20 }) %></span>
-        <p class="stat-label">Lesson progress</p>
+        <p class="stat-label">Overall progress</p>
       </div>
-      <p class="stat-value"><%= summary.percentComplete %><span class="stat-suffix">%</span></p>
-      <div class="meter" aria-label="Lesson completion" role="img" aria-valuenow="<%= summary.percentComplete %>" aria-valuemin="0" aria-valuemax="100">
-        <progress class="meter-fill" value="<%= summary.percentComplete %>" max="100" aria-hidden="true"></progress>
+      <p class="stat-value"><%= overallPercent %><span class="stat-suffix">%</span></p>
+      <div class="meter" aria-label="Module completion" role="img" aria-valuenow="<%= overallPercent %>" aria-valuemin="0" aria-valuemax="100">
+        <progress class="meter-fill" value="<%= overallPercent %>" max="100" aria-hidden="true"></progress>
       </div>
-      <p class="muted">
-        <% if (summary.remainingLessons > 0) { %>
-          <%= summary.remainingLessons %> lesson<%= summary.remainingLessons === 1 ? '' : 's' %> still open.
-        <% } else { %>
-          Every published lesson is marked complete.
-        <% } %>
-      </p>
+      <p class="muted"><%= completedItems %> of <%= totalItems %> item<%= totalItems === 1 ? '' : 's' %> complete.</p>
     </div>
 
     <div class="stat-card stat-card--blue">
-      <div class="stat-head">
-        <span class="stat-icon" aria-hidden="true"><%- include('partials/icon', { name: 'quizzes', size: 20 }) %></span>
-        <p class="stat-label">Quizzes completed</p>
-      </div>
-      <p class="stat-value"><%= historySummary.completedAttempts %></p>
-      <p class="muted">
-        <% if (historySummary.quizzesAttempted > 0) { %>
-          <%= historySummary.quizzesAttempted %> quiz<%= historySummary.quizzesAttempted === 1 ? '' : 'zes' %> attempted.
-        <% } else { %>
-          Submit a quiz and it will appear in your history.
-        <% } %>
-      </p>
-    </div>
-
-    <div class="stat-card stat-card--amber">
       <div class="stat-head">
         <span class="stat-icon" aria-hidden="true"><%- include('partials/icon', { name: 'trophy', size: 20 }) %></span>
         <p class="stat-label">Best quiz score</p>
@@ -77,165 +83,42 @@
       <% } %>
     </div>
   </section>
-
-  <% if (nextLesson) { %>
-    <section class="continue-hero" aria-label="Continue learning">
-      <div class="continue-hero-body">
-        <div class="continue-hero-meta">
-          <p class="eyebrow">Continue next</p>
-          <span class="tag-pill tag-pill--<%= nextLesson.category %>">
-            <%- include('partials/icon', { name: nextLesson.category, size: 13 }) %>
-            <%= categories.find(function (c) { return c.key === nextLesson.category; }) ? categories.find(function (c) { return c.key === nextLesson.category; }).label : nextLesson.category %>
-          </span>
-          <span class="read-time"><%- include('partials/icon', { name: 'clock', size: 14 }) %> <%= nextLesson.readingMinutes %> min read</span>
-        </div>
-        <h2><%= nextLesson.title %></h2>
-        <% if (nextLesson.summary) { %>
-          <p class="muted continue-hero-summary"><%= nextLesson.summary %></p>
-        <% } %>
-        <a class="btn btn-primary btn-hero" href="/learn/<%= nextLesson.slug %>">
-          Continue lesson <%- include('partials/icon', { name: 'arrow', size: 16 }) %>
-        </a>
-      </div>
-
-    </section>
-  <% } else if (summary.publishedLessons > 0) { %>
-    <section class="continue-hero continue-hero-done" aria-label="Lesson progress">
-      <div class="continue-hero-body">
-        <div class="continue-hero-meta">
-          <p class="eyebrow">All caught up</p>
-          <span class="tag-pill tag-pill--done">
-            <%- include('partials/icon', { name: 'check', size: 13 }) %> Everything complete
-          </span>
-        </div>
-        <h2>Every published lesson is marked complete</h2>
-        <p class="muted continue-hero-summary">Revisit any lesson to review it; completion can be undone from the lesson page.</p>
-        <a class="btn btn-secondary btn-hero" href="/modules">
-          Review lessons <%- include('partials/icon', { name: 'arrow', size: 16 }) %>
-        </a>
-      </div>
-      <div class="continue-hero-art" aria-hidden="true">
-        <%- include('partials/icon', { name: 'shield', size: 140 }) %>
-      </div>
-    </section>
-  <% } %>
-
-  <section class="split section-tight">
-    <div class="panel">
-      <div class="section-head-inline">
-        <h2>Recent quiz attempts</h2>
-        <a class="link-arrow" href="/quizzes/history">Full history <span aria-hidden="true">&rarr;</span></a>
-      </div>
-
-      <% if (recentAttempts.length === 0) { %>
-        <div class="empty-state empty-state-compact empty-state--secure">
-          <span class="empty-illustration" aria-hidden="true"><%- include('partials/icon', { name: 'shieldSearch', size: 40 }) %></span>
-          <h3>No quiz attempts yet</h3>
-          <p>Quizzes are short checks with explanations. Your results will appear here after you submit one.</p>
-          <a class="btn btn-secondary" href="/quizzes">Browse quizzes</a>
-        </div>
-      <% } else { %>
-        <ul class="attempt-mini-list">
-          <% recentAttempts.forEach(function (attempt) { %>
-            <li>
-              <a href="/attempts/<%= attempt.id %>">
-                <span class="attempt-mini-main">
-                  <span class="attempt-mini-title"><%= attempt.title %></span>
-                  <span class="muted">v<%= attempt.version %><% if (attempt.isBest) { %> · <span class="badge badge-success">Best</span><% } %></span>
-                </span>
-                <span class="attempt-mini-score">
-                  <% if (attempt.status === 'submitted') { %>
-                    <strong><%= attempt.percentage %>%</strong>
-                    <span class="muted"><%= formatDate(attempt.submittedAt) %></span>
-                  <% } else { %>
-                    <span class="badge badge-warning">Expired</span>
-                    <span class="muted"><%= formatDate(attempt.startedAt) %></span>
-                  <% } %>
-                </span>
-              </a>
-            </li>
-          <% }); %>
-        </ul>
-      <% } %>
+    <section class="section-tight">
+    <div class="section-head-inline">
+      <h2>Your modules</h2>
+      <a class="link-arrow" href="/modules">All modules <span aria-hidden="true">&rarr;</span></a>
     </div>
-
-    <div class="panel panel-muted">
-      <h2>Topic tracks</h2>
-      <ul class="track-list">
-        <% categories.forEach(function (category) { %>
-          <%
-            var trackLessons = lessons.filter(function (lesson) { return lesson.category === category.key; });
-            var trackDone = trackLessons.filter(function (lesson) {
-              var entry = progress.get(lesson.id);
-              return entry && entry.state === 'completed';
-            }).length;
-            var trackTotal = trackLessons.length;
-            var trackState = 'open';
-            var trackBadgeText = 'Open';
-            if (trackTotal === 0) {
-              trackState = 'empty';
-              trackBadgeText = 'No lessons yet';
-            } else if (trackDone === trackTotal) {
-              trackState = 'done';
-              trackBadgeText = trackDone + '/' + trackTotal + ' completed';
-            } else if (trackDone > 0) {
-              trackState = 'progress';
-              trackBadgeText = trackDone + '/' + trackTotal;
-            }
-          %>
+    <% if (modules.length === 0) { %>
+      <div class="empty-state">
+        <h3>No modules are published yet</h3>
+        <p>Check back soon - your instructor publishes modules as they become ready.</p>
+      </div>
+    <% } else { %>
+      <ul class="module-list-compact">
+        <% modules.forEach(function (m) { %>
           <li>
-            <a class="track-row" href="/learn?category=<%= category.key %>">
-              <span class="track-icon track-icon--<%= category.key %>" aria-hidden="true">
-                <%- include('partials/icon', { name: category.key, size: 20 }) %>
+            <a href="/modules/<%= m.id %>" class="module-row">
+              <span class="module-row-title"><%= m.title %></span>
+              <span class="module-row-meta muted"><%= m.progress.completed %>/<%= m.progress.total %> item<%= m.progress.total === 1 ? '' : 's' %></span>
+              <span class="meter meter--sm" aria-label="<%= m.progress.percent %>% complete">
+                <progress class="meter-fill" value="<%= m.progress.percent %>" max="100" aria-hidden="true"></progress>
               </span>
-              <span class="track-text">
-                <span class="track-name"><%= category.label %></span>
-                <span class="track-meta muted"><%= trackTotal %> lesson<%= trackTotal === 1 ? '' : 's' %></span>
-              </span>
-              <span class="track-badge track-badge--<%= trackState %>"><%= trackBadgeText %></span>
+              <span class="module-row-pct"><%= m.progress.percent %>%</span>
             </a>
           </li>
         <% }); %>
       </ul>
-      <p class="muted track-note">Marking a lesson complete records that you finished reading it. It is a progress record, not a test of mastery.</p>
-    </div>
+    <% } %>
   </section>
 
-  <section class="section-tight">
-    <div class="section-head-inline">
-      <h2>Continue learning</h2>
-      <a class="link-arrow" href="/modules">All modules <span aria-hidden="true">&rarr;</span></a>
-    </div>
-
-    <% if (lessons.length === 0) { %>
-      <div class="empty-state">
-        <h3>No lessons are published yet</h3>
-        <p>Check back soon - your instructor publishes lessons as they become ready.</p>
+  <section class="split section-tight">
+    <div class="panel">
+      <div class="section-head-inline">
+        <h2>Your recent quizzes</h2>
+        <a class="link-arrow" href="/quizzes/history">Full history <span aria-hidden="true">&rarr;</span></a>
       </div>
-    <% } else { %>
-      <ul class="lesson-grid">
-        <% lessons.slice(0, 4).forEach(function (lesson) { %>
-          <li class="lesson-card">
-            <div class="lesson-meta">
-              <span class="badge"><%- include('partials/icon', { name: lesson.category, size: 13 }) %><%= (categories.find(function (c) { return c.key === lesson.category; }) || { label: lesson.category }).label %></span>
-              <span class="muted"><%= lesson.readingMinutes %> min read</span>
-            </div>
-            <h3><a href="/learn/<%= lesson.slug %>"><%= lesson.title %></a></h3>
-            <p class="muted"><%= lesson.summary %></p>
-            <div class="lesson-footer">
-              <%
-                var lessonEntry = progress.get(lesson.id);
-                var lessonDone = lessonEntry && lessonEntry.state === 'completed';
-              %>
-              <span class="status-dot status-<%= lessonEntry ? lessonEntry.state : 'none' %>">
-                <%= lessonDone ? 'Completed' : 'Not completed' %>
-              </span>
-              <a class="link-arrow" href="/learn/<%= lesson.slug %>"><%= lessonDone ? 'Review' : 'Start' %> <span aria-hidden="true">&rarr;</span></a>
-            </div>
-          </li>
-        <% }); %>
-      </ul>
-    <% } %>
+      <%- include('partials/quiz-attempts-list', { attempts: recentAttempts, scope: 'mine', emptyTitle: 'No quiz attempts yet', emptyMessage: 'Quizzes are short checks with explanations. Your results will appear here after you submit one.', ctaHref: '/quizzes', ctaLabel: 'Browse quizzes' }) %>
+    </div>
   </section>
 </main>
 

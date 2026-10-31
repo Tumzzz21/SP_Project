@@ -1,0 +1,20 @@
+<% if (!attempts || attempts.length === 0) { %>
+  <%- include('empty-state', { title: emptyTitle || 'No quiz attempts yet', message: emptyMessage || 'Quizzes are short checks with explanations. Your results will appear here after you submit one.', ctaHref: ctaHref, ctaLabel: ctaLabel, icon: 'shieldSearch' }) %>
+<% } else { %>
+  <ul class="attempt-mini-list">
+    <% attempts.forEach(function (attempt) { %>
+      <li>
+        <a href="<%= scope === 'all' ? '/admin/attempts/' + attempt.id : '/attempts/' + attempt.id %>">
+          <span class="attempt-mini-main">
+            <span class="attempt-mini-title"><%= attempt.title %></span>
+            <span class="muted">
+              <% if (scope === 'all') { %><%= attempt.studentUsername %> · <% } %>v<%= attempt.version %><% if (attempt.isBest) { %> · <span class="badge badge-success">Best</span><% } %>
+            </span>
+          </span>
+          <span class="attempt-mini-score"><%= (attempt.maxPoints > 0) ? Math.round(attempt.scorePoints * 100 / attempt.maxPoints) : (attempt.percentage != null ? attempt.percentage : 0) %>%</span>
+          <% if (scope === 'all') { %><span class="link-arrow">Review <span aria-hidden="true">&rarr;</span></span><% } %>
+        </a>
+      </li>
+    <% }); %>
+  </ul>
+<% } %>

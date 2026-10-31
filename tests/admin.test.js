@@ -772,9 +772,9 @@ test('admin dashboard reports live student, content, and participation stats', a
   assert.equal(response.status, 200);
   assert.match(response.text, /Admin overview/);
   assert.match(response.text, /ACTIVE STUDENTS/);
-  assert.match(response.text, /PUBLISHED LESSONS/);
-  assert.match(response.text, /PUBLISHED QUIZ VERSIONS/);
-  assert.match(response.text, /QUIZ PARTICIPATION/);
+  assert.match(response.text, /PUBLISHED MODULES/);
+  assert.match(response.text, /PUBLISHED QUIZZES/);
+  assert.match(response.text, /AVERAGE SCORE/);
   assert.match(response.text, /100%/, 'average score of the perfect attempt');
 });
 
@@ -806,8 +806,8 @@ test('the admin tab row lists every section and marks the current one', async ()
     const hrefs = [...row.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
     assert.deepEqual(
       hrefs,
-      ['/admin', '/admin/attempts'],
-      `${path} lists all five sections in order`,
+      ['/admin', '/admin/students', '/admin/attempts'],
+      `${path} lists all sections in order`,
     );
 
     const active = [...row.matchAll(/class="chip is-active"[\s\S]*?href="([^"]+)"/g)].map((match) => match[1]);
@@ -816,17 +816,18 @@ test('the admin tab row lists every section and marks the current one', async ()
   }
 });
 
-test('the dashboard header no longer stacks the three section buttons', async () => {
+test('the dashboard header carries quick actions and the tab row carries section links', async () => {
   const { app, adminAuth } = setupRoles();
+
   const response = await request(app).get('/admin').set('Cookie', adminAuth.cookie);
 
   assert.equal(response.status, 200);
 
   const head = /<header class="page-head">([\s\S]*?)<\/header>/.exec(response.text);
   assert.ok(head, 'the dashboard keeps its page header');
-  assert.ok(!head[1].includes('<a'), 'the page header carries no action links');
+  assert.ok(head[1].includes('+ New module'), 'quick action for new module present');
+  assert.ok(head[1].includes('+ New quiz'), 'quick action for new quiz present');
 
-  // the section links still exist, now provided by the tab row instead
   const row = adminTabRow(response.text);
   assert.ok(row, 'the tab row carries the section links');
 });

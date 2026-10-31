@@ -47,14 +47,14 @@ test('lesson completion persists, is idempotent, and stays per student', async (
   assert.equal(benLearn.status, 303);
 });
 
-test('dashboard and Learning Center show progress from real records', async () => {
+test('dashboard shows module progress from real records', async () => {
   const { app, db, config } = createContext();
   const user = createUser(db, {});
   const auth = login(db, config, user);
-  const { lessonSlug } = seedContent(db);
+  const seed = seedContent(db);
 
   await request(app)
-    .post(`/learn/${lessonSlug}/complete`)
+    .post(`/modules/${seed.moduleId}/items/${seed.itemId}/complete`)
     .set('Cookie', auth.cookie)
     .send({ _csrf: auth.csrfToken });
 
@@ -62,8 +62,6 @@ test('dashboard and Learning Center show progress from real records', async () =
   assert.equal(dashboard.status, 200);
   assert.match(dashboard.text, /1<span class="stat-suffix">\/1<\/span>/);
   assert.match(dashboard.text, /100<span class="stat-suffix">%<\/span>/);
-  assert.match(dashboard.text, /Every published lesson is marked complete/);
-  assert.doesNotMatch(dashboard.text, /Coming in later phases/);
 
   const learn = await request(app).get('/learn').set('Cookie', auth.cookie);
   assert.equal(learn.status, 303);
@@ -153,7 +151,7 @@ test('empty progress renders explicit empty states instead of fake numbers', asy
 
   const dashboard = await request(app).get('/dashboard').set('Cookie', auth.cookie);
   assert.equal(dashboard.status, 200);
-  assert.match(dashboard.text, /No lessons are published yet/);
+  assert.match(dashboard.text, /No modules are published yet/);
   assert.match(dashboard.text, /No quiz attempts yet/);
   assert.match(dashboard.text, /0<span class="stat-suffix">\/0<\/span>/);
 

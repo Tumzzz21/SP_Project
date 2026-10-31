@@ -1,0 +1,8 @@
+<div class="empty-state empty-state-compact empty-state--secure">
+  <span class="empty-illustration" aria-hidden="true"><%- include('icon', { name: icon || 'shieldSearch', size: 40 }) %></span>
+  <h3><%= title %></h3>
+  <p><%= message %></p>
+  <% if (typeof ctaHref !== 'undefined' && ctaHref && typeof ctaLabel !== 'undefined' && ctaLabel) { %>
+    <a class="btn btn-secondary" href="<%= ctaHref %>"><%= ctaLabel %></a>
+  <% } %>
+</div>

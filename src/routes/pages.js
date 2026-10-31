@@ -130,28 +130,44 @@ function createPageRoutes({ db, config }) {
   // ------------------------------------------------------------- dashboard
 
   router.get('/dashboard', requireActive, (req, res) => {
-
-    const progress = lessonsDb.progressByLesson(db, req.user.id);
-    const published = lessonsDb.listPublished(db);
-    const summary = lessonsDb.progressSummary(db, req.user.id);
-    const nextLesson = lessonsDb.nextIncomplete(db, req.user.id);
-    const history = decorateHistory(attemptsDb.listForUser(db, req.user.id));
-    const categories = CATEGORIES.map((category) => ({
-      ...category,
-      lessons: published.filter((lesson) => lesson.category === category.key).length,
+    const mods = modulesDb.listPublished(db);
+    const modulesWithProgress = mods.map((m) => ({
+      ...m,
+      progress: modulesDb.progressForModule(db, req.user.id, m.id),
     }));
+    // Next unfinished module item
+    let nextItem = null;
+    let nextModule = null;
+    for (const m of modulesWithProgress) {
+      const items = modulesDb.moduleProgress(db, req.user.id, m.id);
+      const firstIncomplete = items.find((it) => !it.completed);
+      if (firstIncomplete) {
+        nextItem = firstIncomplete;
+        nextModule = m;
+        break;
+      }
+    }
+    const completedModules = modulesWithProgress.filter((m) => m.progress.total > 0 && m.progress.completed === m.progress.total).length;
+    const totalItems = modulesWithProgress.reduce((a, m) => a + m.progress.total, 0);
+    const completedItems = modulesWithProgress.reduce((a, m) => a + m.progress.completed, 0);
+    const overallPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+    const history = decorateHistory(attemptsDb.listForUser(db, req.user.id));
+    const historySummary = summarizeHistory(history);
 
     res.render('dashboard', {
       pageTitle: 'Your dashboard | CyberSafe',
       bodyClass: 'page-app',
       activeNav: 'dashboard',
-      summary,
-      categories,
-      progress,
-      lessons: published,
-      nextLesson,
+      user: req.user,
+      modules: modulesWithProgress,
+      nextItem,
+      nextModule,
+      completedModules,
+      overallPercent,
+      totalItems,
+      completedItems,
       recentAttempts: history.slice(0, 4),
-      historySummary: summarizeHistory(history),
+      historySummary,
       flash: readFlash(req),
     });
   });

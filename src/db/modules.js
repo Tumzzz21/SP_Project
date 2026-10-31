@@ -118,6 +118,15 @@ function moduleProgress(db, userId, moduleId) {
   return items.map(item => ({ ...item, completed: completedIds.has(item.id) }));
 }
 
+function countsByStatus(db) {
+  const rows = db.prepare('SELECT status, COUNT(*) AS total FROM modules GROUP BY status').all();
+  const summary = { draft: 0, published: 0, archived: 0, total: 0 };
+  for (const row of rows) {
+    if (Object.prototype.hasOwnProperty.call(summary, row.status)) summary[row.status] = row.total;
+    summary.total += row.total;
+  }
+  return summary;
+}
 function moveModule(db, id, direction) {
   const mod = findById(db, id);
   if (!mod) return;
@@ -146,6 +155,7 @@ function moveItem(db, id, direction) {
 
 module.exports = {
   createModule, findById, listForAdmin, listPublished, updateModule, deleteModule, moveModule,
+  countsByStatus,
   addItem, findItemById, listItems, updateItem, deleteItem, moveItem,
   markComplete, isComplete, progressForModule, moduleProgress,
 };

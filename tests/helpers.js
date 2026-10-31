@@ -1,6 +1,8 @@
 'use strict';
 
 const { createApp } = require('../src/app');
+const lessonsDb = require('../src/db/lessons');
+const modulesDb = require('../src/db/modules');
 const { openDatabase, runMigrations } = require('../src/db');
 const sessions = require('../src/db/sessions');
 
@@ -138,7 +140,10 @@ function seedContent(db) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run('draft-quiz', 1, 'Draft quiz', 'Not visible to students.', 'draft', 70, now, now, null);
 
-  return { quizId, questionId, lessonSlug: 'phishing-test', quizSlug: 'phishing-test-quiz' };
+  const mod = modulesDb.createModule(db, { title: 'Test module', description: 'A module used by the test suite.', status: 'published', sortOrder: 0 });
+  const item = modulesDb.addItem(db, { moduleId: mod.id, type: 'page', title: 'Test module item', content: 'Body', sortOrder: 0 });
+
+  return { quizId, questionId, lessonSlug: 'phishing-test', quizSlug: 'phishing-test-quiz', moduleId: mod.id, itemId: item.id };
 }
 
 module.exports = { testConfig, createContext, createUser, login, seedContent };

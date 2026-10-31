@@ -132,9 +132,9 @@ test('the admin shell renders without template errors', async () => {
   assert.equal(response.status, 200);
   assert.match(response.text, /Admin overview/);
   assert.match(response.text, /ACTIVE STUDENTS/);
-  assert.match(response.text, /PUBLISHED LESSONS/);
-  assert.match(response.text, /PUBLISHED QUIZ VERSIONS/);
-  assert.match(response.text, /QUIZ PARTICIPATION/);
+  assert.match(response.text, /PUBLISHED MODULES/);
+  assert.match(response.text, /PUBLISHED QUIZZES/);
+  assert.match(response.text, /AVERAGE SCORE/);
 });
 
 test('a pending account sees the setup page and nothing else', async () => {
