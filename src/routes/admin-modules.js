@@ -141,6 +141,14 @@ function createAdminModuleRoutes({ db }) {
   // Upload file item
   router.post('/:id/items/upload', ...guard, upload.single('file'), (req, res) => {
     const moduleId = Number(req.params.id);
+    // Validate CSRF after multer parses the multipart body.
+    const csrfModule = require('../middleware/csrf');
+    const provided = (req.body && req.body._csrf) || '';
+    if (!csrfModule.safeEqual(req.session ? req.session.csrfToken : '', provided)) {
+      req.session.flash = req.session.flash || [];
+      req.session.flash.push({ type: 'error', message: 'Your form session has expired. Reload the page and try again.' });
+      return res.redirect(303, '/admin/modules/' + moduleId);
+    }
     if (!req.file) {
       req.session.flash = req.session.flash || [];
       req.session.flash.push({ type: 'error', message: 'No file selected.' });

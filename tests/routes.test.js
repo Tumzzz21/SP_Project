@@ -87,15 +87,6 @@ test('static assets are served from the public directory', async () => {
 });
 
 test('lesson content is escaped before it is rendered', async () => {
-  const { app, db, config } = createContext();
-  const user = createUser(db, {});
-  const auth = login(db, config, user);
-  const { lessonSlug } = seedContent(db);
-
-  const response = await request(app).get(`/learn/${lessonSlug}`).set('Cookie', auth.cookie);
-  assert.equal(response.status, 303);
-});
-
 test('the account page shows profile data but never the Google subject id', async () => {
   const { app, db, config } = createContext();
   const user = createUser(db, { email: 'profile@example.test', username: 'profile1' });
@@ -112,7 +103,7 @@ test('every page renders for a signed-in student', async () => {
   const { app, db, config } = createContext();
   const user = createUser(db, {});
   const auth = login(db, config, user);
-  const { lessonSlug, quizSlug } = seedContent(db);
+  const { quizSlug } = seedContent(db);
 
   const paths = ['/dashboard', '/modules', '/quizzes', `/quizzes/${quizSlug}`, '/settings/profile'];
   for (const page of paths) {
@@ -132,9 +123,9 @@ test('the admin shell renders without template errors', async () => {
   assert.equal(response.status, 200);
   assert.match(response.text, /Admin overview/);
   assert.match(response.text, /ACTIVE STUDENTS/);
-  assert.match(response.text, /PUBLISHED LESSONS/);
-  assert.match(response.text, /PUBLISHED QUIZ VERSIONS/);
-  assert.match(response.text, /QUIZ PARTICIPATION/);
+  assert.match(response.text, /PUBLISHED MODULES/);
+  assert.match(response.text, /PUBLISHED QUIZZES/);
+  assert.match(response.text, /AVERAGE SCORE/);
 });
 
 test('a pending account sees the setup page and nothing else', async () => {
@@ -151,11 +142,4 @@ test('a pending account sees the setup page and nothing else', async () => {
   assert.equal(dashboard.headers.location, '/setup');
 });
 
-test('a 404 for a missing lesson is an error page, not a crash', async () => {
-  const { app, db, config } = createContext();
-  const user = createUser(db, {});
-  const auth = login(db, config, user);
-  const response = await request(app).get('/learn/does-not-exist').set('Cookie', auth.cookie);
-  assert.equal(response.status, 404);
-  assert.match(response.text, /That lesson is not available/);
 });

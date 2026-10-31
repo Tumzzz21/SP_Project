@@ -5,56 +5,16 @@ const assert = require('node:assert/strict');
 const request = require('supertest');
 
 const { createContext, createUser, login, seedContent } = require('./helpers');
+const modulesDb = require('../src/db/modules');
 
-function progressRows(db, userId) {
-  return db.prepare('SELECT * FROM lesson_progress WHERE user_id = ?').all(userId);
-}
-
-test('lesson completion persists, is idempotent, and stays per student', async () => {
-  const { app, db, config } = createContext();
-  const ana = createUser(db, { email: 'ana@example.test', username: 'ana1' });
-  const ben = createUser(db, { email: 'ben@example.test', username: 'ben1' });
-  const anaAuth = login(db, config, ana);
-  const benAuth = login(db, config, ben);
-  const { lessonSlug } = seedContent(db);
-
-  const first = await request(app)
-    .post(`/learn/${lessonSlug}/complete`)
-    .set('Cookie', anaAuth.cookie)
-    .send({ _csrf: anaAuth.csrfToken });
-  assert.equal(first.status, 303);
-  assert.match(first.headers.location, /notice=lesson_completed/);
-
-  const rows = progressRows(db, ana.id);
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].state, 'completed');
-  const completedAt = rows[0].completed_at;
-  assert.ok(completedAt);
-
-  // Repeating the request is safe and keeps the original timestamp.
-  const repeat = await request(app)
-    .post(`/learn/${lessonSlug}/complete`)
-    .set('Cookie', anaAuth.cookie)
-    .send({ _csrf: anaAuth.csrfToken });
-  assert.equal(repeat.status, 303);
-  const afterRepeat = progressRows(db, ana.id);
-  assert.equal(afterRepeat.length, 1, 'no duplicate progress row');
-  assert.equal(afterRepeat[0].completed_at, completedAt, 'completion time is not rewritten');
-
-  // The other student sees none of it.
-  assert.equal(progressRows(db, ben.id).length, 0);
-  const benLearn = await request(app).get('/learn').set('Cookie', benAuth.cookie);
-  assert.equal(benLearn.status, 303);
-});
-
-test('dashboard and Learning Center show progress from real records', async () => {
+test('dashboard shows module progress from real records', async () => {
   const { app, db, config } = createContext();
   const user = createUser(db, {});
   const auth = login(db, config, user);
-  const { lessonSlug } = seedContent(db);
+  const seed = seedContent(db);
 
   await request(app)
-    .post(`/learn/${lessonSlug}/complete`)
+    .post(`/modules/${seed.moduleId}/items/${seed.itemId}/complete`)
     .set('Cookie', auth.cookie)
     .send({ _csrf: auth.csrfToken });
 
@@ -62,88 +22,63 @@ test('dashboard and Learning Center show progress from real records', async () =
   assert.equal(dashboard.status, 200);
   assert.match(dashboard.text, /1<span class="stat-suffix">\/1<\/span>/);
   assert.match(dashboard.text, /100<span class="stat-suffix">%<\/span>/);
-  assert.match(dashboard.text, /Every published lesson is marked complete/);
-  assert.doesNotMatch(dashboard.text, /Coming in later phases/);
 
   const learn = await request(app).get('/learn').set('Cookie', auth.cookie);
   assert.equal(learn.status, 303);
 });
 
-test('a lesson can be marked incomplete again', async () => {
+test('module completion requires a valid CSRF token', async () => {
   const { app, db, config } = createContext();
   const user = createUser(db, {});
   const auth = login(db, config, user);
-  const { lessonSlug } = seedContent(db);
+  const seed = seedContent(db);
 
-  await request(app)
-    .post(`/learn/${lessonSlug}/complete`)
+  // no token -> 403
+  const noToken = await request(app)
+    .post(`/modules/${seed.moduleId}/items/${seed.itemId}/complete`)
+    .set('Cookie', auth.cookie)
+    .send({});
+  assert.equal(noToken.status, 403);
+
+  // wrong token -> 403
+  const wrong = await request(app)
+    .post(`/modules/${seed.moduleId}/items/${seed.itemId}/complete`)
+    .set('Cookie', auth.cookie)
+    .send({ _csrf: 'wrong-token' });
+  assert.equal(wrong.status, 403);
+
+  // valid token -> success
+  const ok = await request(app)
+    .post(`/modules/${seed.moduleId}/items/${seed.itemId}/complete`)
     .set('Cookie', auth.cookie)
     .send({ _csrf: auth.csrfToken });
-  assert.equal(progressRows(db, user.id).length, 1);
+  assert.equal(ok.status, 303);
 
-  const undo = await request(app)
-    .post(`/learn/${lessonSlug}/reopen`)
+  // idempotent: second call succeeds
+  const again = await request(app)
+    .post(`/modules/${seed.moduleId}/items/${seed.itemId}/complete`)
     .set('Cookie', auth.cookie)
     .send({ _csrf: auth.csrfToken });
-  assert.equal(undo.status, 303);
-  assert.match(undo.headers.location, /notice=lesson_reopened/);
-  assert.equal(progressRows(db, user.id).length, 0);
-
-  const page = await request(app).get(`/learn/${lessonSlug}`).set('Cookie', auth.cookie);
-  assert.equal(page.status, 303);
+  assert.equal(again.status, 303);
 });
 
-test('unpublished lessons cannot be completed or opened', async () => {
+test('a student cannot complete an item in a draft or hidden module', async () => {
   const { app, db, config } = createContext();
   const user = createUser(db, {});
   const auth = login(db, config, user);
   const now = new Date().toISOString();
-  db.prepare(
-    `INSERT INTO lessons (slug, title, summary, category, content, reading_minutes, status, created_at, updated_at, published_at)
-     VALUES ('draft-lesson', 'Draft lesson', 'Hidden', 'phishing', 'Body', 3, 'draft', ?, ?, NULL)`,
-  ).run(now, now);
+  const mod = db.prepare(
+    `INSERT INTO modules (title, description, status, sort_order, require_sequential, created_at, updated_at, published_at)
+     VALUES (?, ?, ?, 0, 0, ?, ?, NULL)`,
+  ).run('Draft module', 'hidden', 'draft', now, now);
+  const moduleId = Number(mod.lastInsertRowid);
+  const item = modulesDb.addItem(db, { moduleId, type: 'page', title: 'Draft item', content: 'Body', sortOrder: 0 });
 
-  const complete = await request(app)
-    .post('/learn/draft-lesson/complete')
+  const res = await request(app)
+    .post(`/modules/${moduleId}/items/${item.id}/complete`)
     .set('Cookie', auth.cookie)
     .send({ _csrf: auth.csrfToken });
-  assert.equal(complete.status, 404);
-  assert.equal(progressRows(db, user.id).length, 0);
-
-  const page = await request(app).get('/learn/draft-lesson').set('Cookie', auth.cookie);
-  assert.equal(page.status, 404);
-});
-
-test('administrators cannot record lesson progress', async () => {
-  const { app, db, config } = createContext();
-  const admin = createUser(db, { username: 'boss', role: 'admin' });
-  const auth = login(db, config, admin);
-  const { lessonSlug } = seedContent(db);
-
-  const response = await request(app)
-    .post(`/learn/${lessonSlug}/complete`)
-    .set('Cookie', auth.cookie)
-    .send({ _csrf: auth.csrfToken });
-  assert.equal(response.status, 403);
-  assert.equal(progressRows(db, admin.id).length, 0);
-});
-
-test('lesson completion requires a session and a CSRF token', async () => {
-  const { app, db, config } = createContext();
-  const user = createUser(db, {});
-  const auth = login(db, config, user);
-  const { lessonSlug } = seedContent(db);
-
-  const anonymous = await request(app).post(`/learn/${lessonSlug}/complete`).send({});
-  assert.equal(anonymous.status, 302);
-  assert.match(anonymous.headers.location, /^\/login/);
-
-  const noToken = await request(app)
-    .post(`/learn/${lessonSlug}/complete`)
-    .set('Cookie', auth.cookie)
-    .send({});
-  assert.equal(noToken.status, 403);
-  assert.equal(progressRows(db, user.id).length, 0);
+  assert.ok(res.status === 404 || res.status === 403, 'draft module completion must be rejected');
 });
 
 test('empty progress renders explicit empty states instead of fake numbers', async () => {
@@ -153,7 +88,7 @@ test('empty progress renders explicit empty states instead of fake numbers', asy
 
   const dashboard = await request(app).get('/dashboard').set('Cookie', auth.cookie);
   assert.equal(dashboard.status, 200);
-  assert.match(dashboard.text, /No lessons are published yet/);
+  assert.match(dashboard.text, /No modules are published yet/);
   assert.match(dashboard.text, /No quiz attempts yet/);
   assert.match(dashboard.text, /0<span class="stat-suffix">\/0<\/span>/);
 

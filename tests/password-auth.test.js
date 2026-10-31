@@ -6,7 +6,7 @@ const request = require('supertest');
 
 const { createContext, testConfig, createUser } = require('./helpers');
 const users = require('../src/db/users');
-const { hashPassword, verifyPassword } = require('../src/auth/passwords');
+const { verifyPassword } = require('../src/auth/passwords');
 
 const PASSWORD = 'correct horse battery staple';
 

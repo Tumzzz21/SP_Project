@@ -58,7 +58,7 @@ function main() {
       const lesson = db.prepare('SELECT * FROM lessons WHERE id = ?').get(cl.lesson_id);
       if (!lesson) continue;
       const item = db.prepare('SELECT id FROM module_items WHERE title = ? AND type = ?').get(lesson.title, 'page');
-      if (item) { try { modulesDb.markComplete(db, user.id, item.id); } catch (e) { } }
+      if (item) modulesDb.markComplete(db, user.id, item.id);
     }
   }
 

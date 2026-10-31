@@ -24,7 +24,7 @@ test('a half-registered account is pushed to the setup page', async () => {
   assert.equal(dashboard.status, 302);
   assert.equal(dashboard.headers.location, '/setup');
 
-  const api = await request(app).get('/api/lessons').set('Cookie', auth.cookie);
+  const api = await request(app).get('/api/quizzes').set('Cookie', auth.cookie);
   assert.equal(api.status, 409);
   assert.equal(api.body.error.code, 'setup_required');
 });

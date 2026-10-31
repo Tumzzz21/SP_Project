@@ -43,6 +43,7 @@ function validateSetupInput(input) {
     errors.displayName = 'Enter the name you want to be known by.';
   } else if (displayName.length < 2 || displayName.length > 60) {
     errors.displayName = 'Display name must be between 2 and 60 characters.';
+  // eslint-disable-next-line no-control-regex
   } else if (/[\u0000-\u001f\u007f]/.test(displayName)) {
     errors.displayName = 'Display name contains characters that are not allowed.';
   }
@@ -57,6 +58,7 @@ function validateDisplayName(value) {
   if (displayName.length < 2 || displayName.length > 60) {
     return { value: displayName, error: 'Display name must be between 2 and 60 characters.' };
   }
+  // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u001f\u007f]/.test(displayName)) {
     return { value: displayName, error: 'Display name contains characters that are not allowed.' };
   }

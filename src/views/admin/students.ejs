@@ -1,0 +1,70 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Administrator</p>
+      <h1>Students</h1>
+      <p class="muted">Student progress report.</p>
+    </div>
+    <div class="page-head-actions">
+      <a class="btn btn-secondary" href="/admin/students.csv?_csrf=<%= csrfToken %>">Export CSV</a>
+    </div>
+  </header>
+
+  <%- include('../partials/admin-tabs') %>
+
+  <form method="get" action="/admin/students" class="filter-bar" style="margin-bottom: var(--space-md);">
+    <label for="student-search" class="sr-only">Search students</label>
+    <input id="student-search" type="search" name="q" value="<%= q %>" placeholder="Search by name or email" aria-label="Search students">
+    <input type="hidden" name="sort" value="<%= sort %>">
+    <input type="hidden" name="dir" value="<%= dir %>">
+    <button class="btn btn-secondary" type="submit">Search</button>
+  </form>
+
+  <div class="panel">
+    <% if (rows.length === 0) { %>
+      <div class="empty-state empty-state-compact">
+        <p class="muted">No students found.</p>
+      </div>
+    <% } else { %>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <% const cols = [
+              { key: 'name', label: 'Name' },
+              { key: 'email', label: 'Email' },
+              { key: 'modules', label: 'Modules completed' },
+              { key: 'progress', label: 'Overall progress' },
+              { key: 'score', label: 'Best score' },
+              { key: 'lastActive', label: 'Last active' },
+            ]; %>
+            <% cols.forEach(function (c) { %>
+              <% const nextDir = (sort === c.key && dir === 'asc') ? 'desc' : 'asc'; %>
+              <th>
+                <a href="/admin/students?q=<%= encodeURIComponent(q) %>&sort=<%= c.key %>&dir=<%= nextDir %>"><%= c.label %></a>
+                <% if (sort === c.key) { %><span aria-hidden="true"><%= dir === 'asc' ? '▲' : '▼' %></span><% } %>
+              </th>
+            <% }); %>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.forEach(function (r) { %>
+            <tr>
+              <td><%= r.name %></td>
+              <td><%= r.email %></td>
+              <td><%= r.completedModules %>/<%= r.totalModules %></td>
+              <td><%= r.overallPercent %>%</td>
+              <td><%= r.bestScore === null ? '—' : r.bestScore + '%' %></td>
+              <td><%= r.lastActive ? formatDateTime(r.lastActive) : '—' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

@@ -35,7 +35,7 @@ test('administrators reach the admin shell and are redirected there from the stu
   const page = await request(app).get('/admin').set('Cookie', auth.cookie);
   assert.equal(page.status, 200);
   assert.match(page.text, /Admin overview/);
-  assert.match(page.text, /PUBLISHED LESSONS/);
+  assert.match(page.text, /PUBLISHED MODULES/);
 
   const dashboard = await request(app).get('/dashboard').set('Cookie', auth.cookie);
   assert.equal(dashboard.status, 200);
@@ -43,7 +43,7 @@ test('administrators reach the admin shell and are redirected there from the stu
   const api = await request(app).get('/api/admin/summary').set('Cookie', auth.cookie);
   assert.equal(api.status, 200);
   assert.equal(api.body.users.admins, 1);
-  assert.equal(api.body.lessons.published, 1);
+  assert.equal(api.body.modules.published, 1);
 });
 
 test('public registration exists but can never create an administrator', async () => {
@@ -97,7 +97,7 @@ test('a disabled account immediately loses access and its session', async () => 
   assert.match(after.headers.location, /^\/login/);
   assert.equal(db.prepare('SELECT COUNT(*) AS total FROM sessions').get().total, 0);
 
-  const api = await request(app).get('/api/lessons').set('Cookie', auth.cookie);
+  const api = await request(app).get('/api/quizzes').set('Cookie', auth.cookie);
   assert.equal(api.status, 401);
 });
 

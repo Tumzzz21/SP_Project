@@ -1,0 +1,79 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Administrator</p>
+      <h1>Users</h1>
+      <p class="muted">Manage student and admin accounts.</p>
+    </div>
+  </header>
+
+  <%- include('../partials/admin-tabs') %>
+
+  <form method="get" action="/admin/users" class="filter-bar" style="margin-bottom: var(--space-md);">
+    <label for="user-search" class="sr-only">Search users</label>
+    <input id="user-search" type="search" name="q" value="<%= q %>" placeholder="Search by name or email" aria-label="Search users">
+    <button class="btn btn-secondary" type="submit">Search</button>
+  </form>
+
+  <div class="panel">
+    <% if (rows.length === 0) { %>
+      <div class="empty-state empty-state-compact">
+        <p class="muted">No users found.</p>
+      </div>
+    <% } else { %>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Last active</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.forEach(function (u) { %>
+            <tr>
+              <td><%= u.displayName || u.username || u.email %></td>
+              <td><%= u.email %></td>
+              <td><%= u.role %></td>
+              <td><%= u.status %></td>
+              <td><%= u.lastLoginAt ? formatDateTime(u.lastLoginAt) : '—' %></td>
+              <td>
+                <% if (u.id !== user.id) { %>
+                  <form method="post" action="/admin/users/<%= u.id %>/<%= u.status === 'disabled' ? 'enable' : 'disable' %>" style="display:inline;" onsubmit="return confirm('Are you sure?');">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="_confirm" value="1">
+                    <button class="btn btn-ghost btn-sm" type="submit"><%= u.status === 'disabled' ? 'Enable' : 'Disable' %></button>
+                  </form>
+                  <% if (u.role === 'admin') { %>
+                    <form method="post" action="/admin/users/<%= u.id %>/demote" style="display:inline;" onsubmit="return confirm('Demote this admin to student?');">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <input type="hidden" name="_confirm" value="1">
+                      <button class="btn btn-ghost btn-sm" type="submit">Demote</button>
+                    </form>
+                  <% } else { %>
+                    <form method="post" action="/admin/users/<%= u.id %>/promote" style="display:inline;" onsubmit="return confirm('Promote this user to admin?');">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <input type="hidden" name="_confirm" value="1">
+                      <button class="btn btn-ghost btn-sm" type="submit">Promote</button>
+                    </form>
+                  <% } %>
+                <% } else { %>
+                  <span class="muted">(you)</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

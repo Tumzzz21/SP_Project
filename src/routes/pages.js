@@ -6,7 +6,6 @@ const { AppError } = require('../errors');
 const { requireActive, requireStudent, requireGuest, safeNextPath } = require('../auth/guards');
 const { readFlash } = require('../flash');
 const users = require('../db/users');
-const lessonsDb = require('../db/lessons');
 const modulesDb = require('../db/modules');
 const quizzesDb = require('../db/quizzes');
 const attemptsDb = require('../db/attempts');
@@ -130,28 +129,44 @@ function createPageRoutes({ db, config }) {
   // ------------------------------------------------------------- dashboard
 
   router.get('/dashboard', requireActive, (req, res) => {
-
-    const progress = lessonsDb.progressByLesson(db, req.user.id);
-    const published = lessonsDb.listPublished(db);
-    const summary = lessonsDb.progressSummary(db, req.user.id);
-    const nextLesson = lessonsDb.nextIncomplete(db, req.user.id);
-    const history = decorateHistory(attemptsDb.listForUser(db, req.user.id));
-    const categories = CATEGORIES.map((category) => ({
-      ...category,
-      lessons: published.filter((lesson) => lesson.category === category.key).length,
+    const mods = modulesDb.listPublished(db);
+    const modulesWithProgress = mods.map((m) => ({
+      ...m,
+      progress: modulesDb.progressForModule(db, req.user.id, m.id),
     }));
+    // Next unfinished module item
+    let nextItem = null;
+    let nextModule = null;
+    for (const m of modulesWithProgress) {
+      const items = modulesDb.moduleProgress(db, req.user.id, m.id);
+      const firstIncomplete = items.find((it) => !it.completed);
+      if (firstIncomplete) {
+        nextItem = firstIncomplete;
+        nextModule = m;
+        break;
+      }
+    }
+    const completedModules = modulesWithProgress.filter((m) => m.progress.total > 0 && m.progress.completed === m.progress.total).length;
+    const totalItems = modulesWithProgress.reduce((a, m) => a + m.progress.total, 0);
+    const completedItems = modulesWithProgress.reduce((a, m) => a + m.progress.completed, 0);
+    const overallPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+    const history = decorateHistory(attemptsDb.listForUser(db, req.user.id));
+    const historySummary = summarizeHistory(history);
 
     res.render('dashboard', {
       pageTitle: 'Your dashboard | CyberSafe',
       bodyClass: 'page-app',
       activeNav: 'dashboard',
-      summary,
-      categories,
-      progress,
-      lessons: published,
-      nextLesson,
+      user: req.user,
+      modules: modulesWithProgress,
+      nextItem,
+      nextModule,
+      completedModules,
+      overallPercent,
+      totalItems,
+      completedItems,
       recentAttempts: history.slice(0, 4),
-      historySummary: summarizeHistory(history),
+      historySummary,
       flash: readFlash(req),
     });
   });
@@ -162,17 +177,7 @@ function createPageRoutes({ db, config }) {
     return res.redirect(303, '/modules');
   });
 
-  router.get('/learn/:slug', requireActive, (req, res, next) => {
-    const lesson = lessonsDb.findPublishedBySlug(db, req.params.slug);
-    if (!lesson) {
-      return next(new AppError(404, 'That lesson is not available.', { code: 'lesson_not_found' }));
-    }
-    // Redirect to the module containing this lesson.
-    const mod = db.prepare("SELECT m.id FROM modules m JOIN module_items mi ON mi.module_id = m.id WHERE mi.title = ? AND m.status = 'published'").get(lesson.title);
-    if (mod) {
-      return res.redirect(303, '/modules/' + mod.id);
-    }
-    // Fallback: redirect to modules list
+  router.get('/learn/:slug', requireActive, (req, res) => {
     return res.redirect(303, '/modules');
   });
 

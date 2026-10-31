@@ -13,7 +13,6 @@ const { errorHandler, notFoundHandler } = require('./middleware/errors');
 const { readFlash } = require('./flash');
 const { createAuthRoutes } = require('./routes/auth.routes');
 const { createPageRoutes } = require('./routes/pages');
-const { createLessonRoutes } = require('./routes/lessons');
 const { createAttemptRoutes } = require('./routes/attempts');
 const { createAdminRoutes } = require('./routes/admin');
 const { createModuleRoutes } = require('./routes/modules');
@@ -123,7 +122,6 @@ function createApp({ config, db, oidc = null, logger = console }) {
 
   app.use(createAuthRoutes({ db, config, oidc: googleClient, authLimiter: createAuthLimiter(config) }));
   app.use(createPageRoutes({ db, config }));
-  app.use(createLessonRoutes({ db }));
   app.use(createAttemptRoutes({ db }));
   app.use(createAdminRoutes({ db }));
   app.use(createApiRoutes({ db }));

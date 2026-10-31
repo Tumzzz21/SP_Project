@@ -5,7 +5,6 @@ const assert = require('node:assert/strict');
 const request = require('supertest');
 
 const { createContext, createUser, login, seedContent } = require('./helpers');
-const lessonsDb = require('../src/db/lessons');
 
 async function signedInDashboard(overrides) {
   const ctx = createContext(overrides || {});
@@ -14,55 +13,49 @@ async function signedInDashboard(overrides) {
   return { ctx, user, auth };
 }
 
-test('the dashboard renders the dark app shell with four icon stat cards', async () => {
+test('the dashboard renders the dark app shell with three icon stat cards', async () => {
   const { ctx, auth } = await signedInDashboard();
   const response = await request(ctx.app).get('/dashboard').set('Cookie', auth.cookie);
 
   assert.equal(response.status, 200);
   assert.match(response.text, /class="page-app"/);
 
-  // every stat card carries an inline SVG icon and an accent colour class
   const cards = response.text.match(/class="stat-card stat-card--[a-z]+"/g) || [];
-  assert.equal(cards.length, 4);
+  assert.equal(cards.length, 3, 'three stat cards');
   const iconCount = (response.text.match(/class="stat-icon"[\s\S]{0,200}?<svg/g) || []).length;
-  assert.equal(iconCount, 4, 'each stat card renders an inline svg icon');
+  assert.equal(iconCount, 3, 'each stat card renders an inline svg icon');
 
-  // the pinned stat markup stays intact
   assert.match(response.text, /0<span class="stat-suffix">\/0<\/span>/);
 });
 
-test('the continue banner is a hero with a category pill, read time and CTA', async () => {
+test('the continue card is a hero with a module title and CTA', async () => {
   const { ctx, auth } = await signedInDashboard();
   seedContent(ctx.db);
   const response = await request(ctx.app).get('/dashboard').set('Cookie', auth.cookie);
 
   assert.equal(response.status, 200);
   assert.match(response.text, /class="continue-hero"/);
-  assert.match(response.text, /class="tag-pill tag-pill--[a-z]+"/);
-  assert.match(response.text, /class="read-time"/);
-  assert.match(response.text, /min read/);
-  assert.match(response.text, /class="btn btn-primary btn-hero" href="\/learn\/[^"]+"/);
-  assert.match(response.text, /Continue lesson/);
+  assert.match(response.text, /class="tag-pill"/);
+  assert.match(response.text, /class="btn btn-primary btn-hero" href="\/modules\/\d+"/);
+  assert.match(response.text, /Continue/);
 });
 
-test('topic tracks list every category with an icon and a completion badge', async () => {
-  const { ctx, user, auth } = await signedInDashboard();
-  seedContent(ctx.db);
+test('your modules list shows progress bars linking to /modules/:id', async () => {
+  const { ctx, auth } = await signedInDashboard();
+  const seed = seedContent(ctx.db);
   const response = await request(ctx.app).get('/dashboard').set('Cookie', auth.cookie);
 
-  const rows = response.text.match(/class="track-row"/g) || [];
-  assert.equal(rows.length, 5, 'one row per topic track');
-  const trackIcons = (response.text.match(/class="track-icon track-icon--[a-z]+"/g) || []).length;
-  assert.equal(trackIcons, 5);
-  assert.ok((response.text.match(/class="track-badge track-badge--[a-z]+"/g) || []).length >= 5);
+  const rows = response.text.match(/class="module-row"/g) || [];
+  assert.equal(rows.length, 1, 'one row per published module');
+  assert.match(response.text, /class="meter meter--sm"/);
+  assert.match(response.text, /href="\/modules\/\d+"/);
 
-  // completing the only published lesson flips its track to a completed badge
-  const published = lessonsDb.listPublished(ctx.db);
-  assert.ok(published.length > 0);
-  lessonsDb.markCompleted(ctx.db, user.id, published[0].id);
+  await request(ctx.app)
+    .post(`/modules/${seed.moduleId}/items/${seed.itemId}/complete`)
+    .set('Cookie', auth.cookie)
+    .send({ _csrf: auth.csrfToken });
   const after = await request(ctx.app).get('/dashboard').set('Cookie', auth.cookie);
-  assert.match(after.text, /track-badge--done/);
-  assert.match(after.text, /1\/1 completed/);
+  assert.match(after.text, /100%/);
 });
 
 test('the nav shows an avatar with the user initials', async () => {

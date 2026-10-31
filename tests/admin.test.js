@@ -6,7 +6,6 @@ const request = require('supertest');
 
 const { createContext, createUser, login, seedContent } = require('./helpers');
 
-const nowIso = () => new Date().toISOString();
 
 function setupRoles() {
   const ctx = createContext();
@@ -24,10 +23,6 @@ function setupRoles() {
   };
 }
 
-function lessonRow(db, id) {
-  return db.prepare('SELECT * FROM lessons WHERE id = ?').get(id);
-}
-
 function quizRow(db, id) {
   return db.prepare('SELECT * FROM quizzes WHERE id = ?').get(id);
 }
@@ -41,11 +36,12 @@ test('every admin management endpoint rejects students with 403', async () => {
 
   const pages = [
     ['get', '/admin'],
-    ['get', '/admin/lessons'],
-    ['get', '/admin/lessons/new'],
+    ['get', '/admin/modules'],
+    ['get', '/admin/modules/new'],
     ['get', '/admin/quizzes'],
     ['get', '/admin/quizzes/new'],
     ['get', '/admin/attempts'],
+    ['get', '/admin/students'],
   ];
   for (const [method, path] of pages) {
     const response = await request(app)[method](path).set('Cookie', studentAuth.cookie);
@@ -55,18 +51,14 @@ test('every admin management endpoint rejects students with 403', async () => {
 
   // State-changing endpoints too (CSRF token present, but role fails).
   const writes = [
-    ['post', '/admin/lessons'],
-    ['post', '/admin/lessons/1/status'],
+    ['post', '/admin/modules'],
     ['post', '/admin/quizzes'],
     ['post', '/admin/quizzes/1/publish'],
     ['post', '/admin/quizzes/1/archive'],
     ['post', '/admin/quizzes/1/new-version'],
   ];
   for (const [method, path] of writes) {
-    const response = await request(app)
-      [method](path)
-      .set('Cookie', studentAuth.cookie)
-      .send({ _csrf: studentAuth.csrfToken });
+    const response = await request(app)[method](path).set('Cookie', studentAuth.cookie).send({ _csrf: studentAuth.csrfToken });
     assert.equal(response.status, 403, `${method.toUpperCase()} ${path} should be 403`);
   }
 });
@@ -74,11 +66,11 @@ test('every admin management endpoint rejects students with 403', async () => {
 test('guests are sent to login instead of seeing admin pages', async () => {
   const { app } = setupRoles();
 
-  const response = await request(app).get('/admin/lessons');
+  const response = await request(app).get('/admin/modules');
   assert.equal(response.status, 302);
   assert.match(response.headers.location, /^\/login/);
 
-  const write = await request(app).post('/admin/lessons').send({ title: 'x' });
+  const write = await request(app).post('/admin/modules').send({ title: 'x' });
   assert.equal(write.status, 302);
   assert.match(write.headers.location, /^\/login/);
 });
@@ -103,239 +95,6 @@ test('disabled admins cannot reach the admin area', async () => {
 
 // ---------------------------------------------------------------------------
 // 2. Lesson management: CRUD + publication transitions
-// ---------------------------------------------------------------------------
-
-test('admin creates, edits, publishes, unpublishes, and archives a lesson', async () => {
-  const { app, db, adminAuth, studentAuth } = setupRoles();
-
-  // Create (draft).
-  const create = await request(app)
-    .post('/admin/lessons')
-    .set('Cookie', adminAuth.cookie)
-    .send({
-      _csrf: adminAuth.csrfToken,
-      title: 'Recognizing phishing emails',
-      slug: 'recognizing-phishing-emails',
-      summary: 'How to spot a phishing message before you click.',
-      category: 'phishing',
-      content: '## Signs\n\n- Urgency\n- Strange sender',
-      readingMinutes: 5,
-    });
-  assert.equal(create.status, 303, create.text);
-  const id = Number(/\/admin\/lessons\/(\d+)/.exec(create.headers.location)[1]);
-
-  let row = lessonRow(db, id);
-  assert.equal(row.status, 'draft', 'new lessons start as drafts');
-  assert.equal(row.published_at, null);
-
-  // Drafts are invisible to students.
-  const hidden = await request(app).get('/learn/recognizing-phishing-emails').set('Cookie', studentAuth.cookie);
-  assert.equal(hidden.status, 404);
-
-  // Edit while draft.
-  const edit = await request(app)
-    .post(`/admin/lessons/${id}`)
-    .set('Cookie', adminAuth.cookie)
-    .send({
-      _csrf: adminAuth.csrfToken,
-      title: 'Recognizing phishing emails (revised)',
-      slug: 'recognizing-phishing-emails',
-      summary: 'How to spot a phishing message before you click.',
-      category: 'phishing',
-      content: '## Signs\n\n- Urgency\n- Strange sender\n- Mismatched links',
-      readingMinutes: 6,
-    });
-  assert.equal(edit.status, 303, edit.text);
-  row = lessonRow(db, id);
-  assert.equal(row.title, 'Recognizing phishing emails (revised)');
-  assert.equal(row.reading_minutes, 6);
-
-  // Publish → visible to students.
-  const publish = await request(app)
-    .post(`/admin/lessons/${id}/status`)
-    .set('Cookie', adminAuth.cookie)
-    .send({ _csrf: adminAuth.csrfToken, status: 'published' });
-  assert.equal(publish.status, 303);
-  assert.match(publish.headers.location, /notice=lesson_published/);
-  row = lessonRow(db, id);
-  assert.equal(row.status, 'published');
-  assert.ok(row.published_at, 'publishing stamps published_at');
-
-  const visible = await request(app).get('/learn/recognizing-phishing-emails').set('Cookie', studentAuth.cookie);
-  assert.equal(visible.status, 303);
-
-  // Unpublish → back to draft, hidden again, progress untouched.
-  const unpublish = await request(app)
-    .post(`/admin/lessons/${id}/status`)
-    .set('Cookie', adminAuth.cookie)
-    .send({ _csrf: adminAuth.csrfToken, status: 'draft' });
-  assert.equal(unpublish.status, 303);
-  assert.match(unpublish.headers.location, /notice=lesson_unpublished/);
-  assert.equal(lessonRow(db, id).status, 'draft');
-  const hiddenAgain = await request(app).get('/learn/recognizing-phishing-emails').set('Cookie', studentAuth.cookie);
-  assert.equal(hiddenAgain.status, 404);
-
-  // Archive from published.
-  await request(app)
-    .post(`/admin/lessons/${id}/status`)
-    .set('Cookie', adminAuth.cookie)
-    .send({ _csrf: adminAuth.csrfToken, status: 'published' });
-  const archive = await request(app)
-    .post(`/admin/lessons/${id}/status`)
-    .set('Cookie', adminAuth.cookie)
-    .send({ _csrf: adminAuth.csrfToken, status: 'archived' });
-  assert.equal(archive.status, 303);
-  assert.match(archive.headers.location, /notice=lesson_archived/);
-  assert.equal(lessonRow(db, id).status, 'archived');
-
-  // Invalid status value is rejected.
-  const bad = await request(app)
-    .post(`/admin/lessons/${id}/status`)
-    .set('Cookie', adminAuth.cookie)
-    .send({ _csrf: adminAuth.csrfToken, status: 'nonsense' });
-  assert.equal(bad.status, 400);
-});
-
-test('lesson slug conflicts are rejected with a field error', async () => {
-  const { app, adminAuth } = setupRoles();
-
-  const first = await request(app)
-    .post('/admin/lessons')
-    .set('Cookie', adminAuth.cookie)
-    .send({
-      _csrf: adminAuth.csrfToken,
-      title: 'First lesson',
-      slug: 'unique-slug-here',
-      summary: 'Summary text that is long enough to pass validation.',
-      category: 'phishing',
-      content: 'Some content for the lesson body.',
-      readingMinutes: 4,
-    });
-  assert.equal(first.status, 303, first.text);
-
-  const second = await request(app)
-    .post('/admin/lessons')
-    .set('Cookie', adminAuth.cookie)
-    .send({
-      _csrf: adminAuth.csrfToken,
-      title: 'Second lesson',
-      slug: 'unique-slug-here',
-      summary: 'Summary text that is long enough to pass validation.',
-      category: 'phishing',
-      content: 'Some content for the lesson body.',
-      readingMinutes: 4,
-    });
-  assert.equal(second.status, 409, 'duplicate slug should be a conflict');
-  assert.match(second.text, /already in use/);
-});
-
-test('lesson validation rejects missing or invalid fields', async () => {
-  const { app, adminAuth } = setupRoles();
-
-  const response = await request(app)
-    .post('/admin/lessons')
-    .set('Cookie', adminAuth.cookie)
-    .send({
-      _csrf: adminAuth.csrfToken,
-      title: 'x', // too short
-      slug: '!!!', // normalises to empty → rejected
-      summary: 'short',
-      category: 'not-a-category',
-      content: '',
-      readingMinutes: '999',
-    });
-  assert.equal(response.status, 400);
-  assert.match(response.text, /Title must be|Enter a quiz title|3-120|3–120/);
-  assert.match(response.text, /Enter a URL slug\./);
-});
-
-test('lesson content renders escaped: no script execution from author HTML', async () => {
-  const { app, db, adminAuth, studentAuth } = setupRoles();
-
-  const create = await request(app)
-    .post('/admin/lessons')
-    .set('Cookie', adminAuth.cookie)
-    .send({
-      _csrf: adminAuth.csrfToken,
-      title: 'Unsafe content test',
-      slug: 'unsafe-content-test',
-      summary: 'Checking that raw HTML in lesson content never executes.',
-      category: 'ethics',
-      content: '<script>window.__pwned = true;</script>\n\n## Heading',
-      readingMinutes: 3,
-    });
-  assert.equal(create.status, 303, create.text);
-  const id = Number(/\/admin\/lessons\/(\d+)/.exec(create.headers.location)[1]);
-
-  await request(app)
-    .post(`/admin/lessons/${id}/status`)
-    .set('Cookie', adminAuth.cookie)
-    .send({ _csrf: adminAuth.csrfToken, status: 'published' });
-
-  const preview = await request(app)
-    .get(`/admin/lessons/${id}/preview`)
-    .set('Cookie', adminAuth.cookie);
-  assert.equal(preview.status, 200);
-  assert.ok(!preview.text.includes('<script>window.__pwned'), 'script tag must be escaped in preview');
-  assert.match(preview.text, /&lt;script&gt;/);
-
-  const studentView = await request(app)
-    .get('/learn/unsafe-content-test')
-    .set('Cookie', studentAuth.cookie);
-  assert.equal(studentView.status, 303);
-});
-
-test('student lesson progress survives admin edits, republish, and archive', async () => {
-  const { app, db, adminAuth, studentAuth } = setupRoles();
-  const seed = seedContent(db);
-
-  // Student completes the seeded published lesson.
-  const complete = await request(app)
-    .post(`/learn/${seed.lessonSlug}/complete`)
-    .set('Cookie', studentAuth.cookie)
-    .send({ _csrf: studentAuth.csrfToken });
-  assert.equal(complete.status, 303, complete.text);
-
-  const lesson = db.prepare('SELECT id FROM lessons WHERE slug = ?').get(seed.lessonSlug);
-  const progressBefore = db
-    .prepare('SELECT * FROM lesson_progress WHERE lesson_id = ?')
-    .all(lesson.id);
-  assert.equal(progressBefore.length, 1);
-  assert.equal(progressBefore[0].state, 'completed');
-
-  // Admin edits title/content, unpublishes, republishes, then archives.
-  await request(app)
-    .post(`/admin/lessons/${lesson.id}`)
-    .set('Cookie', adminAuth.cookie)
-    .send({
-      _csrf: adminAuth.csrfToken,
-      title: 'Renamed phishing lesson',
-      slug: seed.lessonSlug,
-      summary: 'A lesson used by the test suite, now renamed.',
-      category: 'phishing',
-      content: '## Changed\n\nNew body.',
-      readingMinutes: 5,
-    });
-  for (const status of ['draft', 'published', 'archived']) {
-    const response = await request(app)
-      .post(`/admin/lessons/${lesson.id}/status`)
-      .set('Cookie', adminAuth.cookie)
-      .send({ _csrf: adminAuth.csrfToken, status });
-    assert.equal(response.status, 303, `transition to ${status}`);
-  }
-
-  const progressAfter = db.prepare('SELECT * FROM lesson_progress WHERE lesson_id = ?').all(lesson.id);
-  assert.equal(progressAfter.length, 1, 'progress row still exists');
-  assert.equal(progressAfter[0].state, 'completed', 'progress state unchanged');
-  assert.equal(
-    db.prepare('SELECT COUNT(*) AS n FROM lessons WHERE id = ?').get(lesson.id).n,
-    1,
-    'lesson row was archived, never deleted',
-  );
-});
-
-// ---------------------------------------------------------------------------
-// 3. Quiz authoring: draft validation, publish, immutability, versioning
 // ---------------------------------------------------------------------------
 
 test('admin creates a draft quiz, saves questions, and publishes it', async () => {
@@ -772,9 +531,9 @@ test('admin dashboard reports live student, content, and participation stats', a
   assert.equal(response.status, 200);
   assert.match(response.text, /Admin overview/);
   assert.match(response.text, /ACTIVE STUDENTS/);
-  assert.match(response.text, /PUBLISHED LESSONS/);
-  assert.match(response.text, /PUBLISHED QUIZ VERSIONS/);
-  assert.match(response.text, /QUIZ PARTICIPATION/);
+  assert.match(response.text, /PUBLISHED MODULES/);
+  assert.match(response.text, /PUBLISHED QUIZZES/);
+  assert.match(response.text, /AVERAGE SCORE/);
   assert.match(response.text, /100%/, 'average score of the perfect attempt');
 });
 
@@ -806,8 +565,8 @@ test('the admin tab row lists every section and marks the current one', async ()
     const hrefs = [...row.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
     assert.deepEqual(
       hrefs,
-      ['/admin', '/admin/attempts'],
-      `${path} lists all five sections in order`,
+      ['/admin', '/admin/students', '/admin/users', '/admin/attempts'],
+      `${path} lists all sections in order`,
     );
 
     const active = [...row.matchAll(/class="chip is-active"[\s\S]*?href="([^"]+)"/g)].map((match) => match[1]);
@@ -816,17 +575,18 @@ test('the admin tab row lists every section and marks the current one', async ()
   }
 });
 
-test('the dashboard header no longer stacks the three section buttons', async () => {
+test('the dashboard header carries quick actions and the tab row carries section links', async () => {
   const { app, adminAuth } = setupRoles();
+
   const response = await request(app).get('/admin').set('Cookie', adminAuth.cookie);
 
   assert.equal(response.status, 200);
 
   const head = /<header class="page-head">([\s\S]*?)<\/header>/.exec(response.text);
   assert.ok(head, 'the dashboard keeps its page header');
-  assert.ok(!head[1].includes('<a'), 'the page header carries no action links');
+  assert.ok(head[1].includes('+ New module'), 'quick action for new module present');
+  assert.ok(head[1].includes('+ New quiz'), 'quick action for new quiz present');
 
-  // the section links still exist, now provided by the tab row instead
   const row = adminTabRow(response.text);
   assert.ok(row, 'the tab row carries the section links');
 });

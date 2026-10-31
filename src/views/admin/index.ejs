@@ -1,7 +1,5 @@
 <%- include('../partials/head') %>
 
-
-
 <main id="main" class="shell page">
   <%- include('../partials/flash') %>
 
@@ -9,46 +7,137 @@
     <div>
       <p class="eyebrow">Administrator</p>
       <h1>Admin overview</h1>
+      <p class="muted">Manage modules, quizzes, and review student attempts.</p>
+    </div>
+    <div class="page-head-actions">
+      <a class="btn btn-primary" href="/admin/modules/new">+ New module</a>
+      <a class="btn btn-secondary" href="/admin/quizzes/new">+ New quiz</a>
     </div>
   </header>
 
   <%- include('../partials/admin-tabs') %>
 
-   <section class="stat-grid" aria-label="Platform totals">
-     <div class="stat-card">
-       <p class="stat-label text-xs font-mono tracking-wider text-gray-400 uppercase">ACTIVE STUDENTS</p>
-       <p class="stat-value text-4xl font-bold text-[#00ff88]"><%= studentCounts.active %></p>
-       <div class="stat-breakdown">
-         <p class="stat-sub text-sm text-gray-400"><%= studentCounts.pendingSetup %> awaiting setup</p>
-         <p class="stat-sub text-sm text-gray-400"><%= studentCounts.disabled %> disabled</p>
-       </div>
-     </div>
-     <div class="stat-card">
-       <p class="stat-label text-xs font-mono tracking-wider text-gray-400 uppercase">PUBLISHED LESSONS</p>
-       <p class="stat-value text-4xl font-bold text-[#00ff88]"><%= lessonCounts.published %></p>
-       <div class="stat-breakdown">
-         <p class="stat-sub text-sm text-gray-400"><%= lessonCounts.draft %> draft<%= lessonCounts.draft === 1 ? '' : 's' %></p>
-         <p class="stat-sub text-sm text-gray-400"><%= lessonCounts.archived %> archived</p>
-       </div>
-     </div>
-     <div class="stat-card">
-       <p class="stat-label text-xs font-mono tracking-wider text-gray-400 uppercase">PUBLISHED QUIZ VERSIONS</p>
-       <p class="stat-value text-4xl font-bold text-[#00ff88]"><%= quizCounts.published %></p>
-       <div class="stat-breakdown">
-         <p class="stat-sub text-sm text-gray-400"><%= quizCounts.draft %> draft<%= quizCounts.draft === 1 ? '' : 's' %></p>
-         <p class="stat-sub text-sm text-gray-400"><%= quizCounts.archived %> archived</p>
-       </div>
-     </div>
-     <div class="stat-card">
-       <p class="stat-label text-xs font-mono tracking-wider text-gray-400 uppercase">QUIZ PARTICIPATION</p>
-       <p class="stat-value text-4xl font-bold text-[#00ff88]"><%= participation.participants %></p>
-       <div class="stat-breakdown">
-         <p class="stat-sub text-sm text-gray-400"><%= participation.submittedAttempts %> submitted attempt<%= participation.submittedAttempts === 1 ? '' : 's' %></p>
-         <p class="stat-sub text-sm text-gray-400"><%= participation.averagePercent %>% average score</p>
-       </div>
-     </div>
-   </section>
+  <section class="stat-grid" aria-label="Platform totals">
+    <div class="stat-card stat-card--green">
+      <div class="stat-head">
+        <span class="stat-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'users', size: 20 }) %></span>
+        <p class="stat-label">ACTIVE STUDENTS</p>
+      </div>
+      <p class="stat-value"><%= studentCounts.active %></p>
+      <p class="muted"><%= studentCounts.pendingSetup %> awaiting setup · <%= studentCounts.disabled %> disabled</p>
+    </div>
 
-</main>
+    <div class="stat-card stat-card--cyan">
+      <div class="stat-head">
+        <span class="stat-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'modules', size: 20 }) %></span>
+        <p class="stat-label">PUBLISHED MODULES</p>
+      </div>
+      <p class="stat-value"><%= moduleCounts.published %></p>
+      <p class="muted"><%= moduleCounts.draft %> draft<%= moduleCounts.draft === 1 ? '' : 's' %> · <%= moduleCounts.archived %> archived</p>
+    </div>
+
+    <div class="stat-card stat-card--blue">
+      <div class="stat-head">
+        <span class="stat-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'quizzes', size: 20 }) %></span>
+        <p class="stat-label">PUBLISHED QUIZZES</p>
+      </div>
+      <p class="stat-value"><%= quizCounts.published %></p>
+      <p class="muted"><%= quizCounts.draft %> draft<%= quizCounts.draft === 1 ? '' : 's' %> · <%= quizCounts.archived %> archived</p>
+    </div>
+
+    <div class="stat-card stat-card--amber">
+      <div class="stat-head">
+        <span class="stat-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'trophy', size: 20 }) %></span>
+        <p class="stat-label">AVERAGE SCORE</p>
+      </div>
+      <% if (participation.averagePercent === null || participation.averagePercent === undefined) { %>
+        <p class="stat-value">—</p>
+        <p class="muted">No submitted attempts yet.</p>
+      <% } else { %>
+        <p class="stat-value"><%= participation.averagePercent %><span class="stat-suffix">%</span></p>
+        <p class="muted"><%= participation.participants %> participant<%= participation.participants === 1 ? '' : 's' %> · <%= participation.submittedAttempts %> attempt<%= participation.submittedAttempts === 1 ? '' : 's' %></p>
+      <% } %>
+    </div>
+  </section>
+
+  <!-- Your progress -->
+  <section class="section-tight">
+    <div class="section-head-inline">
+      <h2>Your progress</h2>
+      <a class="link-arrow" href="/dashboard">Open dashboard <span aria-hidden="true">&rarr;</span></a>
+    </div>
+    <div class="stat-grid" aria-label="Your progress">
+      <div class="stat-card stat-card--green">
+        <div class="stat-head">
+          <span class="stat-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'modules', size: 20 }) %></span>
+          <p class="stat-label">Modules completed</p>
+        </div>
+        <p class="stat-value"><%= adminProgress.completedModules %><span class="stat-suffix">/<%= adminProgress.totalModules %></span></p>
+      </div>
+      <div class="stat-card stat-card--blue">
+        <div class="stat-head">
+          <span class="stat-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'trophy', size: 20 }) %></span>
+          <p class="stat-label">Best quiz score</p>
+        </div>
+        <% if (adminProgress.bestPercentage === null || adminProgress.bestPercentage === undefined) { %>
+          <p class="stat-value">—</p>
+          <p class="muted">Finish a quiz to see a score here.</p>
+        <% } else { %>
+          <p class="stat-value"><%= adminProgress.bestPercentage %><span class="stat-suffix">%</span></p>
+        <% } %>
+      </div>
+    </div>
+    <p class="muted"><a class="link-arrow" href="/dashboard">View your full dashboard <span aria-hidden="true">&rarr;</span></a></p>
+  </section>
+
+  <!-- Needs attention -->
+  <section class="section-tight">
+    <div class="section-head-inline">
+      <h2>Needs attention</h2>
+      <a class="link-arrow" href="/admin/students">All students <span aria-hidden="true">&rarr;</span></a>
+    </div>
+    <div class="panel">
+      <% const hasAttention = (draftModules.length + draftQuizzes.length + studentsNotStarted.length) > 0; %>
+      <% if (!hasAttention) { %>
+        <div class="empty-state empty-state-compact">
+          <p class="muted">Nothing needs attention right now.</p>
+        </div>
+      <% } else { %>
+        <ul class="attention-list">
+          <% draftModules.forEach(function (m) { %>
+            <li>
+              <a href="/admin/modules/<%= m.id %>">
+                <span class="badge badge-warning">Draft module</span>
+                <%= m.title %>
+              </a>
+            </li>
+          <% }); %>
+          <% draftQuizzes.forEach(function (q) { %>
+            <li>
+              <a href="/admin/quizzes/<%= q.id %>">
+                <span class="badge badge-warning">Draft quiz</span>
+                <%= q.title %> (v<%= q.version %>)
+              </a>
+            </li>
+          <% }); %>
+          <% studentsNotStarted.forEach(function (s) { %>
+            <li>
+              <span class="badge">Not started</span>
+              <%= s.display_name || s.username %> (<%= s.email %>)
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+  </section>
+
+  <!-- Latest student attempts -->
+  <section class="section-tight">
+    <div class="section-head-inline">
+      <h2>Latest student attempts</h2>
+      <a class="link-arrow" href="/admin/attempts">All attempts <span aria-hidden="true">&rarr;</span></a>
+    </div>
+    <%- include('../partials/quiz-attempts-list', { attempts: recentAttempts, scope: 'all', emptyTitle: 'No attempts yet', emptyMessage: 'No student attempts have been submitted yet.', ctaHref: null, ctaLabel: null }) %>
+  </section>
 
 <%- include('../partials/footer') %>
