@@ -1,0 +1,122 @@
+<section class="settings-section">
+  <h2>Password</h2>
+  <% if (hasPassword) { %>
+    <form method="post" action="/settings/account/password" class="form-stack settings-form" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="field<%= errors.current_password ? ' field-invalid' : '' %>">
+        <label class="field-label">Current Password</label>
+        <input
+          type="password"
+          name="current_password"
+          maxlength="200"
+          required
+          aria-describedby="<%= errors.current_password ? 'current-password-error' : 'current-password-help' %>"
+        >
+        <% if (errors.current_password) { %>
+          <span class="field-error" id="current-password-error"><%= errors.current_password %></span>
+        <% } else { %>
+          <span class="field-help" id="current-password-help" hidden>Your current password.</span>
+        <% } %>
+      </div>
+
+      <div class="field<%= errors.new_password ? ' field-invalid' : '' %>">
+        <label class="field-label">New Password</label>
+        <input
+          type="password"
+          name="new_password"
+          maxlength="200"
+          required
+          aria-describedby="<%= errors.new_password ? 'new-password-error' : 'new-password-help' %>"
+        >
+        <% if (errors.new_password) { %>
+          <span class="field-error" id="new-password-error"><%= errors.new_password %></span>
+        <% } else { %>
+          <span class="field-help" id="new-password-help" hidden>Must be at least 8 characters.</span>
+        <% } %>
+      </div>
+
+      <div class="field<%= errors.confirm_password ? ' field-invalid' : '' %>">
+        <label class="field-label">Confirm New Password</label>
+        <input
+          type="password"
+          name="confirm_password"
+          maxlength="200"
+          required
+          aria-describedby="<%= errors.confirm_password ? 'confirm-password-error' : 'confirm-password-help' %>"
+        >
+        <% if (errors.confirm_password) { %>
+          <span class="field-error" id="confirm-password-error"><%= errors.confirm_password %></span>
+        <% } else { %>
+          <span class="field-help" id="confirm-password-help" hidden>Must match the new password.</span>
+        <% } %>
+      </div>
+
+      <button class="btn btn-primary btn-block" type="submit">Change Password</button>
+    </form>
+  <% } else { %>
+    <div class="notice notice-info">
+      You signed in with Google. Password changes are managed through your Google account.
+    </div>
+  <% } %>
+</section>
+
+<section class="settings-section">
+  <h2>Privacy and data</h2>
+  <p class="muted">
+    CyberSafe keeps your display name, username, verified email, role, and lesson progress.
+    Session records are deleted when you sign out or when they expire.
+  </p>
+  <p class="muted">
+    For data correction or deletion requests, use the Delete Account flow below.
+  </p>
+</section>
+
+<section class="settings-section">
+  <h2>Delete account</h2>
+  <form method="post" action="/settings/account/delete" class="form-stack settings-form" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <% if (hasPassword) { %>
+      <div class="field<%= errors.delete_password ? ' field-invalid' : '' %>">
+        <label class="field-label">Password</label>
+        <input
+          type="password"
+          name="delete_password"
+          maxlength="200"
+          required
+          aria-describedby="<%= errors.delete_password ? 'delete-password-error' : 'delete-password-help' %>"
+        >
+        <% if (errors.delete_password) { %>
+          <span class="field-error" id="delete-password-error"><%= errors.delete_password %></span>
+        <% } else { %>
+          <span class="field-help" id="delete-password-help" hidden>Enter your password to confirm deletion.</span>
+        <% } %>
+      </div>
+    <% } else { %>
+      <div class="field<%= errors.delete_confirmation ? ' field-invalid' : '' %>">
+        <label class="field-label">Confirmation</label>
+        <input
+          type="text"
+          name="delete_confirmation"
+          maxlength="6"
+          required
+          aria-describedby="<%= errors.delete_confirmation ? 'delete-confirmation-error' : 'delete-confirmation-help' %>"
+        >
+        <% if (errors.delete_confirmation) { %>
+          <span class="field-error" id="delete-confirmation-error"><%= errors.delete_confirmation %></span>
+        <% } else { %>
+          <span class="field-help" id="delete-confirmation-help" hidden>Type DELETE to confirm account deletion.</span>
+        <% } %>
+      </div>
+    <% } %>
+
+    <button class="btn btn-danger btn-block" type="submit">Delete Account</button>
+  </form>
+</section>
+
+<% if (flash && flash.length) { %>
+  <% flash.forEach(function (item) { %>
+    <div class="notice notice-<%= item.type %>"><%= item.message %></div>
+  <% }); %>
+<% } %>

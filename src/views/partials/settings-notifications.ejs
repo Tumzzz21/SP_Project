@@ -1,0 +1,40 @@
+<section class="settings-section">
+  <h2>Notifications</h2>
+  <p class="muted">Choose which email notifications you receive.</p>
+
+  <form method="post" action="/settings/notifications" class="form-stack settings-form" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <div class="field">
+      <label class="field-label">
+        <input type="checkbox" name="email_reminders" value="1" <%= (user.notification_prefs && user.notification_prefs.email_reminders) ? 'checked' : '' %>>
+        Email reminders
+      </label>
+      <p class="field-help">Receive email reminders about your learning progress.</p>
+    </div>
+
+    <div class="field">
+      <label class="field-label">
+        <input type="checkbox" name="new_lessons" value="1" <%= (user.notification_prefs && user.notification_prefs.new_lessons) ? 'checked' : '' %>>
+        New lessons
+      </label>
+      <p class="field-help">Get notified when new lessons are published.</p>
+    </div>
+
+    <div class="field">
+      <label class="field-label">
+        <input type="checkbox" name="quiz_results" value="1" <%= (user.notification_prefs && user.notification_prefs.quiz_results) ? 'checked' : '' %>>
+        Quiz results
+      </label>
+      <p class="field-help">Receive your quiz results by email.</p>
+    </div>
+
+    <button class="btn btn-primary btn-block" type="submit">Save preferences</button>
+  </form>
+
+  <% if (flash && flash.length) { %>
+    <% flash.forEach(function (item) { %>
+      <div class="notice notice-<%= item.type %>"><%= item.message %></div>
+    <% }); %>
+  <% } %>
+</section>

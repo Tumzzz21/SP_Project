@@ -70,11 +70,11 @@
           <dl class="answer-compare">
             <div>
               <dt>Your answer</dt>
-              <dd><%= answer.selectedLabel === null ? 'No answer selected' : answer.selectedLabel %></dd>
+              <dd><%= answer.selectedLabel === null ? 'No answer selected' : (answer.selectedPosition ? String.fromCharCode(64 + answer.selectedPosition) + '. ' : '') + answer.selectedLabel %></dd>
             </div>
             <div>
               <dt>Correct answer</dt>
-              <dd><%= answer.correctLabel || 'Not available' %></dd>
+              <dd><%= answer.correctLabel ? (answer.correctPosition ? String.fromCharCode(64 + answer.correctPosition) + '. ' : '') + answer.correctLabel : 'Not available' %></dd>
             </div>
           </dl>
 

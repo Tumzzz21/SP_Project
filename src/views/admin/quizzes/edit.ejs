@@ -297,27 +297,43 @@
       <label class="field-label">Prompt</label>
       <textarea rows="2" maxlength="500" data-q-field="prompt" required></textarea>
     </div>
-    <div class="opt-list" data-q-options>
-      <div class="opt-row" data-q-option>
-        <input type="radio" value="0" checked data-q-correct aria-label="Mark option 1 correct">
-        <input type="text" maxlength="160" placeholder="Option 1" data-q-option-label>
+    <div class="opt-grid">
+      <div class="field">
+        <label class="field-label">Option A</label>
+        <input type="text" maxlength="160" data-q-opt="0" required placeholder="Option A">
       </div>
-      <div class="opt-row" data-q-option>
-        <input type="radio" value="1" data-q-correct aria-label="Mark option 2 correct">
-        <input type="text" maxlength="160" placeholder="Option 2" data-q-option-label>
-        <button class="btn btn-ghost btn-sm" type="button" data-q-remove-option>Remove</button>
+      <div class="field">
+        <label class="field-label">Option B</label>
+        <input type="text" maxlength="160" data-q-opt="1" required placeholder="Option B">
+      </div>
+      <div class="field">
+        <label class="field-label">Option C</label>
+        <input type="text" maxlength="160" data-q-opt="2" required placeholder="Option C">
+      </div>
+      <div class="field">
+        <label class="field-label">Option D</label>
+        <input type="text" maxlength="160" data-q-opt="3" required placeholder="Option D">
       </div>
     </div>
-    <div class="q-actions">
-      <button class="btn btn-ghost btn-sm" type="button" data-q-add-option>Add option</button>
-      <button class="btn btn-ghost btn-sm" type="button" data-q-move-up>Move up</button>
-      <button class="btn btn-ghost btn-sm" type="button" data-q-move-down>Move down</button>
-      <button class="btn btn-ghost btn-sm" type="button" data-q-remove>Remove question</button>
+    <div class="field">
+      <label class="field-label">Correct answer</label>
+      <select data-q-correct required>
+        <option value="">Choose the correct option...</option>
+        <option value="0">A</option>
+        <option value="1">B</option>
+        <option value="2">C</option>
+        <option value="3">D</option>
+      </select>
     </div>
     <div class="field">
       <label class="field-label">Explanation (shown after submission)</label>
       <textarea rows="2" maxlength="500" data-q-field="explanation"></textarea>
       <p class="field-help">Why the correct answer is right. Optional but encouraged.</p>
+    </div>
+    <div class="q-actions">
+      <button class="btn btn-ghost btn-sm" type="button" data-q-move-up>Move up</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-q-move-down>Move down</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-q-remove>Remove question</button>
     </div>
   </fieldset>
 </template>

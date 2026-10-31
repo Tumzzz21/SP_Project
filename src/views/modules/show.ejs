@@ -1,0 +1,64 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../partials/flash') %>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/modules">Modules</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page"><%= module.title %></span>
+  </nav>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Module</p>
+      <h1><%= module.title %></h1>
+      <p class="muted"><%= module.description %></p>
+    </div>
+  </header>
+
+  <div class="module-progress-summary">
+    <div class="meter" aria-label="<%= progress.percent %>% complete">
+      <progress class="meter-fill" value="<%= progress.percent %>" max="100" aria-hidden="true"></progress>
+    </div>
+    <p class="muted"><%= progress.completed %> of <%= progress.total %> items complete (<%= progress.percent %>%)</p>
+  </div>
+
+  <ul class="module-checklist">
+    <% items.forEach(function (item, idx) { %>
+      <li class="module-checklist-item<%= item.completed ? ' is-complete' : '' %>">
+        <div class="module-checklist-head">
+          <span class="module-checklist-number"><%= idx + 1 %></span>
+          <span class="module-checklist-title"><%= item.title %></span>
+          <span class="badge badge-<%= item.type === 'quiz' ? 'warning' : 'outline' %>"><%= item.type %></span>
+          <% if (item.completed) { %>
+            <span class="badge badge-success">Done</span>
+          <% } %>
+        </div>
+        <div class="module-checklist-body">
+          <% if (item.type === 'page') { %>
+            <div class="module-page-content"><%- item.content %></div>
+          <% } else if (item.type === 'link') { %>
+            <a href="<%= item.url %>" target="_blank" rel="noopener noreferrer" class="link-arrow">Open link →</a>
+          <% } else if (item.type === 'file') { %>
+            <a href="/files/<%= item.file_path.split('/').pop() %>" class="link-arrow">Download <%= item.file_name %> →</a>
+          <% } else if (item.type === 'quiz') { %>
+            <a href="/quizzes" class="link-arrow">Take quiz →</a>
+          <% } %>
+        </div>
+        <% if (!item.completed) { %>
+          <form method="post" action="/modules/<%= module.id %>/items/<%= item.id %>/complete" style="display:inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn-ghost btn-sm" type="submit">Mark complete</button>
+          </form>
+        <% } %>
+      </li>
+    <% }); %>
+  </ul>
+
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/modules">Back to modules</a>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

@@ -25,10 +25,10 @@ test('the avatar is a dropdown trigger with the user details inside', async () =
 
   // trigger
   assert.match(response.text, /<button[^>]*class="nav-avatar"[^>]*aria-haspopup="true"[^>]*aria-expanded="false"[^>]*aria-controls="nav-user-panel"/);
-  assert.match(response.text, /data-user-menu-toggle/);
+  assert.match(response.text, /id="nav-avatar-btn"/);
 
-  // panel starts closed
-  assert.match(response.text, /class="nav-user-panel" id="nav-user-panel" data-user-menu-panel hidden/);
+  // panel starts closed (no hidden attribute; visibility controlled by CSS)
+  assert.match(response.text, /class="profile-menu" id="nav-user-panel"/);
 
   // user info header
   assert.match(response.text, /class="nav-user-name">Aldrin</);
@@ -36,8 +36,8 @@ test('the avatar is a dropdown trigger with the user details inside', async () =
 
   // divider + the two options
   assert.match(response.text, /class="nav-user-divider"/);
-  assert.match(response.text, /class="nav-user-item" href="\/account"/);
-  assert.match(response.text, /Account Settings/);
+  assert.match(response.text, /class="nav-user-item" href="\/settings\/profile"/);
+  assert.match(response.text, /Settings/);
   assert.match(response.text, /class="nav-user-item nav-user-signout"/);
   assert.match(response.text, /Sign Out/);
   assert.match(response.text, /action="\/auth\/logout"/);
@@ -50,7 +50,7 @@ test('the top bar does not repeat the Account link owned by the dropdown', async
   // the ordinary Account link is gone, because the dropdown already reaches it
   assert.ok(!response.text.includes('<a href="/account"'), 'the top bar must not render a separate Account link');
   // and the page is still reachable through the dropdown item
-  assert.match(response.text, /class="nav-user-item" href="\/account"/);
+  assert.match(response.text, /class="nav-user-item" href="\/settings\/profile"/);
 });
 
 test('the standalone sign out control is gone from the top bar', async () => {
@@ -67,7 +67,7 @@ test('the standalone sign out control is gone from the top bar', async () => {
 
 test('the account page no longer offers a sign out button in the sign-in method card', async () => {
   const { ctx, auth } = await signedIn();
-  const response = await request(ctx.app).get('/account').set('Cookie', auth.cookie);
+  const response = await request(ctx.app).get('/settings/security').set('Cookie', auth.cookie);
 
   assert.equal(response.status, 200);
   assert.ok(!response.text.includes('Sign out of this session'), 'the sign-in method card must not contain a sign out button');

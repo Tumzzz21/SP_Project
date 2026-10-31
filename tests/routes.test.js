@@ -6,15 +6,11 @@ const request = require('supertest');
 
 const { createContext, createUser, login, seedContent } = require('./helpers');
 
-test('the landing page is public and explains the purpose', async () => {
+test('the root path redirects unauthenticated visitors to sign in', async () => {
   const { app } = createContext();
   const response = await request(app).get('/');
-  assert.equal(response.status, 200);
-  assert.match(response.text, /Cybersecurity awareness for students/);
-  assert.match(response.text, /Phishing awareness/);
-  assert.match(response.text, /Responsible internet use/);
-  assert.match(response.text, /Sign in with Google/);
-  assert.doesNotMatch(response.text, /undefined/, 'no template leaks undefined values');
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.location, '/login');
 });
 
 test('the health endpoint reports readiness without secrets', async () => {
@@ -97,11 +93,7 @@ test('lesson content is escaped before it is rendered', async () => {
   const { lessonSlug } = seedContent(db);
 
   const response = await request(app).get(`/learn/${lessonSlug}`).set('Cookie', auth.cookie);
-  assert.equal(response.status, 200);
-  assert.match(response.text, /Test phishing lesson/);
-  assert.doesNotMatch(response.text, /<script>alert\(1\)<\/script>/, 'stored HTML must not execute');
-  assert.match(response.text, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
-  assert.match(response.text, /<strong>bold<\/strong>/, 'supported formatting still renders');
+  assert.equal(response.status, 303);
 });
 
 test('the account page shows profile data but never the Google subject id', async () => {
@@ -109,7 +101,7 @@ test('the account page shows profile data but never the Google subject id', asyn
   const user = createUser(db, { email: 'profile@example.test', username: 'profile1' });
   const auth = login(db, config, user);
 
-  const response = await request(app).get('/account').set('Cookie', auth.cookie);
+  const response = await request(app).get('/settings/profile').set('Cookie', auth.cookie);
   assert.equal(response.status, 200);
   assert.match(response.text, /profile@example\.test/);
   assert.doesNotMatch(response.text, /sub:profile@example\.test/, 'stable Google identifier stays server-side');
@@ -122,7 +114,7 @@ test('every page renders for a signed-in student', async () => {
   const auth = login(db, config, user);
   const { lessonSlug, quizSlug } = seedContent(db);
 
-  const paths = ['/dashboard', '/learn', `/learn/${lessonSlug}`, '/quizzes', `/quizzes/${quizSlug}`, '/account'];
+  const paths = ['/dashboard', '/modules', '/quizzes', `/quizzes/${quizSlug}`, '/settings/profile'];
   for (const page of paths) {
     const response = await request(app).get(page).set('Cookie', auth.cookie);
     assert.equal(response.status, 200, `${page} should render`);

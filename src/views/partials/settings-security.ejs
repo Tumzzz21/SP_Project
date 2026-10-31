@@ -1,0 +1,57 @@
+<section class="settings-section">
+  <h2>Sign-in method</h2>
+  <% if (String(user.googleSub).indexOf('local:') === 0) { %>
+    <p class="muted">
+      You sign in with your email and password. CyberSafe stores only a salted scrypt hash
+      of your password — never a readable copy — plus your email, and no Google data at all.
+    </p>
+  <% } else if (String(user.googleSub).indexOf('dev:') === 0) { %>
+    <p class="muted">
+      This account was created by the local development sign-in, which is only available
+      on a teacher's test server.
+    </p>
+  <% } else { %>
+    <p class="muted">
+      You sign in with Google. CyberSafe stores your Google account identifier and email,
+      and never your Google password.
+    </p>
+  <% } %>
+  <p class="muted"><strong><%= sessions ? sessions.length : 0 %></strong> active session<%= (sessions && sessions.length === 1) ? '' : 's' %> for this account.</p>
+</section>
+
+<section class="settings-section">
+  <h2>Active sessions</h2>
+  <% if (sessions && sessions.length > 0) { %>
+    <form method="post" action="/settings/security/logout-others" class="form-stack settings-form" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field">
+        <label class="field-label">Active Sessions</label>
+        <div class="session-list">
+          <% sessions.forEach(function (sess) { %>
+            <div class="session-item<%= sess.is_current ? ' current' : '' %>">
+              <div class="session-info">
+                <div class="session-label"><%= sess.device || 'Unknown device' %></div>
+                <div class="session-detail"><%= sess.ip || 'Unknown IP' %></div>
+                <div class="session-detail"><%= sess.lastSeen || 'Never' %></div>
+              </div>
+              <% if (sess.is_current) { %>
+                <span class="session-tag">This device</span>
+              <% } %>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Log out other sessions</button>
+    </form>
+  <% } else { %>
+    <div class="notice notice-info">
+      No active sessions found.
+    </div>
+  <% } %>
+</section>
+
+<% if (flash && flash.length) { %>
+  <% flash.forEach(function (item) { %>
+    <div class="notice notice-<%= item.type %>"><%= item.message %></div>
+  <% }); %>
+<% } %>

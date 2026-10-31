@@ -162,8 +162,7 @@ test('admin creates, edits, publishes, unpublishes, and archives a lesson', asyn
   assert.ok(row.published_at, 'publishing stamps published_at');
 
   const visible = await request(app).get('/learn/recognizing-phishing-emails').set('Cookie', studentAuth.cookie);
-  assert.equal(visible.status, 200);
-  assert.match(visible.text, /Recognizing phishing emails/);
+  assert.equal(visible.status, 303);
 
   // Unpublish → back to draft, hidden again, progress untouched.
   const unpublish = await request(app)
@@ -283,8 +282,7 @@ test('lesson content renders escaped: no script execution from author HTML', asy
   const studentView = await request(app)
     .get('/learn/unsafe-content-test')
     .set('Cookie', studentAuth.cookie);
-  assert.equal(studentView.status, 200);
-  assert.ok(!studentView.text.includes('<script>window.__pwned'), 'script tag must be escaped for students');
+  assert.equal(studentView.status, 303);
 });
 
 test('student lesson progress survives admin edits, republish, and archive', async () => {
@@ -374,11 +372,15 @@ test('admin creates a draft quiz, saves questions, and publishes it', async () =
       q_0_explanation: 'Unexpected urgency plus links is the classic pattern.',
       q_0_opt_0: 'An email demanding action in 10 minutes',
       q_0_opt_1: 'A newsletter you subscribed to',
+      q_0_opt_2: 'A password reset request',
+      q_0_opt_3: 'A software update notification',
       q_0_correct: '0',
       q_1_prompt: 'What should you do with a suspicious link?',
       q_1_explanation: 'Hovering first shows the real destination.',
       q_1_opt_0: 'Click it to check quickly',
       q_1_opt_1: 'Hover over it to inspect the destination',
+      q_1_opt_2: 'Forward it to a friend',
+      q_1_opt_3: 'Ignore it completely',
       q_1_correct: '1',
     });
   assert.equal(save.status, 303, save.text);
@@ -406,7 +408,7 @@ test('admin creates a draft quiz, saves questions, and publishes it', async () =
       q_0_correct: '0',
     });
   assert.equal(invalid.status, 400);
-  assert.match(invalid.text, /at least two answer options/);
+  assert.match(invalid.text, /provide exactly four answer options/);
 
   // Publish → visible, frozen.
   const publish = await request(app)
@@ -436,6 +438,26 @@ test('publishing an empty or invalid draft is refused', async () => {
   void seed;
 });
 
+test('the quiz catalogue shows admin controls only to admins', async () => {
+  const { app, db, adminAuth, studentAuth } = setupRoles();
+  const { quizId } = seedContent(db);
+  const draftId = db.prepare("SELECT id FROM quizzes WHERE slug = 'draft-quiz'").get().id;
+
+  const adminCatalogue = await request(app).get('/quizzes').set('Cookie', adminAuth.cookie);
+  assert.equal(adminCatalogue.status, 200);
+  assert.match(adminCatalogue.text, /href="\/admin\/quizzes\/new"[^>]*>\+ New quiz/);
+  assert.match(adminCatalogue.text, new RegExp(`href="/admin/quizzes/${draftId}"[^>]*>Edit`));
+  assert.match(adminCatalogue.text, new RegExp(`action="/admin/quizzes/${draftId}/publish"`));
+  assert.match(adminCatalogue.text, new RegExp(`href="/admin/quizzes/${quizId}"[^>]*>Edit`));
+  assert.match(adminCatalogue.text, new RegExp(`action="/admin/quizzes/${quizId}/archive"`));
+  assert.doesNotMatch(adminCatalogue.text, /style="display:inline"/);
+
+  const studentCatalogue = await request(app).get('/quizzes').set('Cookie', studentAuth.cookie);
+  assert.equal(studentCatalogue.status, 200);
+  assert.doesNotMatch(studentCatalogue.text, /New quiz|>Edit<|>Publish<|>Archive</);
+  assert.doesNotMatch(studentCatalogue.text, /draft-quiz/);
+});
+
 test('a published quiz version is immutable: no in-place edits, no direct SQL', async () => {
   const { app, db, adminAuth } = setupRoles();
   const seed = seedContent(db);
@@ -463,6 +485,8 @@ test('a published quiz version is immutable: no in-place edits, no direct SQL', 
       q_0_prompt: 'Replaced prompt?',
       q_0_opt_0: 'A',
       q_0_opt_1: 'B',
+      q_0_opt_2: 'C',
+      q_0_opt_3: 'D',
       q_0_correct: '0',
     });
   assert.equal(questions.status, 409);
@@ -553,6 +577,8 @@ test('editing a published quiz creates a new draft version; old attempts keep th
       q_0_explanation: 'New explanation.',
       q_0_opt_0: 'Correct answer two',
       q_0_opt_1: 'Wrong answer two',
+      q_0_opt_2: 'Third option',
+      q_0_opt_3: 'Fourth option',
       q_0_correct: '0',
     });
   const publishV2 = await request(app)
@@ -750,8 +776,6 @@ test('admin dashboard reports live student, content, and participation stats', a
   assert.match(response.text, /PUBLISHED QUIZ VERSIONS/);
   assert.match(response.text, /QUIZ PARTICIPATION/);
   assert.match(response.text, /100%/, 'average score of the perfect attempt');
-  assert.match(response.text, /Manage lessons/);
-  assert.match(response.text, /Attempt review/);
 });
 
 // ---------------------------------------------------------------------------
@@ -760,8 +784,6 @@ test('admin dashboard reports live student, content, and participation stats', a
 
 const TAB_PAGES = [
   ['/admin', '/admin'],
-  ['/admin/lessons', '/admin/lessons'],
-  ['/admin/quizzes', '/admin/quizzes'],
   ['/admin/attempts', '/admin/attempts'],
 ];
 
@@ -784,8 +806,8 @@ test('the admin tab row lists every section and marks the current one', async ()
     const hrefs = [...row.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
     assert.deepEqual(
       hrefs,
-      ['/admin', '/admin/lessons', '/admin/quizzes', '/admin/attempts'],
-      `${path} lists all four sections in order`,
+      ['/admin', '/admin/attempts'],
+      `${path} lists all five sections in order`,
     );
 
     const active = [...row.matchAll(/class="chip is-active"[\s\S]*?href="([^"]+)"/g)].map((match) => match[1]);

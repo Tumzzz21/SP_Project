@@ -1,0 +1,96 @@
+<%- include('../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Learning modules</p>
+      <h1>Modules</h1>
+      <p class="muted">Structured learning paths with pages, files, links, and quizzes.</p>
+    </div>
+    <% if (user && user.role === 'admin') { %>
+    <div class="page-head-actions">
+      <a class="btn btn-primary btn-sm" href="/admin/modules/new">+ New module</a>
+    </div>
+    <% } %>
+  </header>
+
+  <% if (modules.length === 0) { %>
+    <div class="empty-state">
+      <h3>No modules published yet</h3>
+      <p class="muted">Check back soon — your instructor publishes modules as they become ready.</p>
+    </div>
+  <% } else { %>
+    <div class="module-rows">
+      <% modules.forEach(function (m) { %>
+        <%
+          const statusLabel = m.progress.completed === m.progress.total && m.progress.total > 0 ? 'Completed' : (m.progress.completed > 0 ? 'In progress' : 'Not started');
+          const statusClass = m.progress.completed === m.progress.total && m.progress.total > 0 ? 'done' : (m.progress.completed > 0 ? 'progress' : 'open');
+        %>
+        <div class="module-row" data-module-id="<%= m.id %>">
+          <div class="module-row-main">
+            <div class="module-cover">
+              <% if (m.cover_image) { %>
+                <img src="<%= m.cover_image %>" alt="" class="module-cover-img" width="150" height="150">
+              <% } else { %>
+                <div class="module-cover-placeholder">
+                  <%- include('../partials/icon', { name: 'shield', size: 48 }) %>
+                </div>
+              <% } %>
+            </div>
+            <div class="module-row-info">
+              <h3 class="module-row-title"><%= m.title %></h3>
+              <p class="module-row-desc"><%= m.description %></p>
+              <div class="module-row-meta">
+                <div class="module-row-progress">
+                  <div class="meter" aria-label="<%= m.progress.percent %>% complete">
+                    <progress class="meter-fill" value="<%= m.progress.percent %>" max="100" aria-hidden="true"></progress>
+                  </div>
+                  <span class="module-row-progress-text"><%= m.progress.completed %> of <%= m.progress.total %> item<%= m.progress.total === 1 ? "" : "s" %></span>
+                </div>
+                <span class="module-status-chip module-status-chip--<%= statusClass %>"><%= statusLabel %></span>
+                <% if (user && user.role === 'admin') { %>
+                <span class="badge badge-<%= m.status === 'published' ? 'success' : (m.status === 'draft' ? 'warning' : 'outline') %>"><%= m.status %></span>
+                <a href="/admin/modules/<%= m.id %>" class="btn btn-ghost btn-sm">Edit</a>
+                <% } %>
+              </div>
+            </div>
+            <a href="/modules/<%= m.id %>" class="btn btn-primary btn-sm module-row-btn"><%= m.progress.completed > 0 ? 'Continue' : 'Start' %></a>
+            <button type="button" class="module-row-chevron" aria-expanded="false" aria-label="Toggle items" data-module-toggle>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+          <div class="module-row-items" hidden>
+            <ul class="module-row-item-list">
+              <% if (m.items && m.items.length === 0) { %>
+                <li class="module-row-item muted">No items yet.</li>
+              <% } else if (m.items) { %>
+                <% m.items.forEach(function (item, idx) { %>
+                  <li class="module-row-item">
+                    <span class="module-row-item-icon">
+                      <% if (item.type === 'page') { %><%- include('../partials/icon', { name: 'lessons', size: 16 }) %>
+                      <% } else if (item.type === 'file') { %><%- include('../partials/icon', { name: 'progress', size: 16 }) %>
+                      <% } else if (item.type === 'link') { %><%- include('../partials/icon', { name: 'arrow', size: 16 }) %>
+                      <% } else if (item.type === 'quiz') { %><%- include('../partials/icon', { name: 'quizzes', size: 16 }) %>
+                      <% } %>
+                    </span>
+                    <a href="/modules/<%= m.id %>#item-<%= item.id %>" class="module-row-item-link"><%= item.title %></a>
+                    <span class="module-row-item-type"><%= item.type %></span>
+                    <% if (item.completed) { %>
+                      <span class="module-row-item-done">Done</span>
+                    <% } else { %>
+                      <span class="module-row-item-open">Open</span>
+                    <% } %>
+                  </li>
+                <% }); %>
+              <% } %>
+            </ul>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</main>
+
+<%- include('../partials/footer') %>

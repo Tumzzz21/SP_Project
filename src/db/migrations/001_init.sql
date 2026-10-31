@@ -26,6 +26,11 @@ CREATE TABLE users (
   updated_at         TEXT    NOT NULL,
   last_login_at      TEXT,
   setup_completed_at TEXT,
+  bio                 TEXT    DEFAULT '',
+  avatar_url          TEXT    DEFAULT '',
+  notification_prefs  TEXT    DEFAULT '{}',
+  language            TEXT    DEFAULT 'en',
+  text_size           TEXT    DEFAULT 'medium',
   CONSTRAINT users_google_sub_unique UNIQUE (google_sub),
   CONSTRAINT users_username_required_when_active
     CHECK (status = 'pending_setup' OR (username IS NOT NULL AND display_name IS NOT NULL))

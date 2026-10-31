@@ -43,7 +43,9 @@ function resolveSession(db, token, { now = new Date() } = {}) {
               s.expires_at   AS expiresAt,
               s.last_seen_at AS lastSeenAt,
               u.id, u.google_sub AS googleSub, u.email, u.email_verified AS emailVerified,
-              u.username, u.display_name AS displayName, u.role, u.status,
+              u.username, u.display_name AS displayName, u.bio, u.avatar_url AS avatarUrl,
+              u.notification_prefs AS notificationPrefs, u.language, u.text_size AS textSize,
+              u.role, u.status,
               u.created_at AS userCreatedAt, u.updated_at AS userUpdatedAt,
               u.last_login_at AS lastLoginAt, u.setup_completed_at AS setupCompletedAt
          FROM sessions s
@@ -65,6 +67,11 @@ function resolveSession(db, token, { now = new Date() } = {}) {
     emailVerified: row.emailVerified,
     username: row.username,
     displayName: row.displayName,
+    bio: row.bio,
+    avatar_url: row.avatarUrl,
+    notification_prefs: row.notificationPrefs,
+    language: row.language,
+    text_size: row.textSize,
     role: row.role,
     status: row.status,
     createdAt: row.userCreatedAt,

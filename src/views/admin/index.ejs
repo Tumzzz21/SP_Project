@@ -27,7 +27,7 @@
        <p class="stat-label text-xs font-mono tracking-wider text-gray-400 uppercase">PUBLISHED LESSONS</p>
        <p class="stat-value text-4xl font-bold text-[#00ff88]"><%= lessonCounts.published %></p>
        <div class="stat-breakdown">
-         <p class="stat-sub text-sm text-gray-400"><%= lessonCounts.draft %> drafts</p>
+         <p class="stat-sub text-sm text-gray-400"><%= lessonCounts.draft %> draft<%= lessonCounts.draft === 1 ? '' : 's' %></p>
          <p class="stat-sub text-sm text-gray-400"><%= lessonCounts.archived %> archived</p>
        </div>
      </div>
@@ -35,7 +35,7 @@
        <p class="stat-label text-xs font-mono tracking-wider text-gray-400 uppercase">PUBLISHED QUIZ VERSIONS</p>
        <p class="stat-value text-4xl font-bold text-[#00ff88]"><%= quizCounts.published %></p>
        <div class="stat-breakdown">
-         <p class="stat-sub text-sm text-gray-400"><%= quizCounts.draft %> drafts</p>
+         <p class="stat-sub text-sm text-gray-400"><%= quizCounts.draft %> draft<%= quizCounts.draft === 1 ? '' : 's' %></p>
          <p class="stat-sub text-sm text-gray-400"><%= quizCounts.archived %> archived</p>
        </div>
      </div>
@@ -43,41 +43,12 @@
        <p class="stat-label text-xs font-mono tracking-wider text-gray-400 uppercase">QUIZ PARTICIPATION</p>
        <p class="stat-value text-4xl font-bold text-[#00ff88]"><%= participation.participants %></p>
        <div class="stat-breakdown">
-         <p class="stat-sub text-sm text-gray-400"><%= participation.submittedAttempts %> submitted attempts</p>
+         <p class="stat-sub text-sm text-gray-400"><%= participation.submittedAttempts %> submitted attempt<%= participation.submittedAttempts === 1 ? '' : 's' %></p>
          <p class="stat-sub text-sm text-gray-400"><%= participation.averagePercent %>% average score</p>
        </div>
      </div>
    </section>
 
-  <section class="section-tight">
-    <div class="section-head section-head-inline">
-      <h2>Manage lesson</h2>
-      <a class="link-arrow" href="/admin/lessons">Manage lessons</a>
-    </div>
-    <p class="muted">
-      Every lesson you create gets a private draft the student never sees. Publish a lesson only when the explanations and checkpoint questions are stable, and use archived lessons to retire outdated material without losing the record.
-    </p>
-  </section>
-
-  <section class="section-tight">
-    <div class="section-head section-head-inline">
-      <h2>Lesson quiz</h2>
-      <a class="link-arrow" href="/admin/quizzes">Manage quizzes</a>
-    </div>
-    <p class="muted">
-      Each published lesson may carry one linked quiz. Add questions to the draft version, grade them in preview, then publish when the quiz reflects the current lesson. Each lesson can support one active quiz at a time.
-    </p>
-  </section>
-
-  <section class="section-tight">
-    <div class="section-head section-head-inline">
-      <h2>Attempt review</h2>
-      <a class="link-arrow" href="/admin/attempts">Review attempts</a>
-    </div>
-    <p class="muted">
-      Submitted and expired attempts appear here, newest first. Scores are graded server-side at submission and locked once submitted — attempt review is read-only and cannot change results.
-    </p>
-  </section>
 </main>
 
 <%- include('../partials/footer') %>

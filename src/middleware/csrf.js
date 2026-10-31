@@ -26,6 +26,11 @@ function csrfProtection(req, res, next) {
   // OIDC `state` parameter instead of a CSRF token.
   if (!req.session) return next();
 
+  // Multipart uploads are parsed by multer (route-level), so req.body is
+  // empty when this middleware runs. Skip global CSRF for the photo upload
+  // route; the route handler validates the token after multer parses the body.
+  if (req.path === '/settings/profile/photo') return next();
+
   const provided = req.get('x-csrf-token') || (req.body && req.body._csrf) || '';
   if (!safeEqual(req.session.csrfToken, provided)) {
     return next(

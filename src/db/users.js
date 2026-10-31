@@ -11,6 +11,11 @@ const USER_COLUMNS = `
   email_verified      AS emailVerified,
   username,
   display_name        AS displayName,
+  bio,
+  avatar_url,
+  notification_prefs,
+  language,
+  text_size,
   role,
   status,
   created_at          AS createdAt,
@@ -22,7 +27,19 @@ const USER_COLUMNS = `
 /** @param {any} row */
 function toUser(row) {
   if (!row) return null;
-  return { ...row, emailVerified: Boolean(row.emailVerified) };
+  let notificationPrefs = {};
+  try {
+    notificationPrefs = row.notification_prefs ? JSON.parse(row.notification_prefs) : {};
+  } catch (e) {
+    // If JSON is invalid, fall back to empty object
+    notificationPrefs = {};
+  }
+  return {
+    ...row,
+    emailVerified: Boolean(row.emailVerified),
+    notification_prefs: notificationPrefs,
+    // language and text_size are already strings, no transformation needed
+  };
 }
 
 /** @param {import('better-sqlite3').Database} db @param {string} googleSub */
@@ -196,6 +213,49 @@ function updateDisplayName(db, userId, displayName) {
   return findById(db, userId);
 }
 
+/**
+ * Update the profile fields for a given user.
+ * @param {import('better-sqlite3').Database} db
+ * @param {number} id
+ * @param {{display_name?:string, username?:string, bio?:string,
+ *          avatar_url?:string, notification_prefs?:Object,
+ *          language?:string, text_size?:string}} data
+ */
+function updateProfile(db, id, data) {
+  const set = [];
+  const vals = [];
+
+  if (data.display_name !== undefined) {
+    set.push('display_name = ?'); vals.push(data.display_name);
+  }
+  if (data.username !== undefined) {
+    // Store empty username as NULL
+    const val = data.username === null || data.username === '' ? null : data.username;
+    set.push('username = ?'); vals.push(val);
+  }
+  if (data.bio !== undefined) {
+    set.push('bio = ?'); vals.push(data.bio);
+  }
+  if (data.avatar_url !== undefined) {
+    set.push('avatar_url = ?'); vals.push(data.avatar_url);
+  }
+  if (data.notification_prefs !== undefined) {
+    set.push('notification_prefs = ?'); vals.push(JSON.stringify(data.notification_prefs));
+  }
+  if (data.language !== undefined) {
+    set.push('language = ?'); vals.push(data.language);
+  }
+  if (data.text_size !== undefined) {
+    set.push('text_size = ?'); vals.push(data.text_size);
+  }
+
+  if (set.length === 0) return; // nothing to change
+
+  vals.push(id);
+  const sql = `UPDATE users SET ${set.join(', ')} WHERE id = ?`;
+  db.prepare(sql).run(...vals);
+}
+
 /** Admin user list (used by the Phase 1 admin shell). */
 function listUsers(db, { limit = 50 } = {}) {
   return db
@@ -246,6 +306,7 @@ module.exports = {
   setRole,
   setStatus,
   updateDisplayName,
+  updateProfile,
   listUsers,
   countsByRole,
   studentStatusCounts,

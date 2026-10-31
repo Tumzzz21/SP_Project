@@ -1,0 +1,154 @@
+<%- include('../../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../../partials/flash') %>
+
+  <% if (module) { %>
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/admin/modules">Modules</a>
+      <span aria-hidden="true">/</span>
+      <span><%= module.title %></span>
+    </nav>
+  <% } %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Admin · Module</p>
+      <h1><%= module ? module.title : 'New module' %></h1>
+    </div>
+    <% if (module) { %>
+      <div class="page-head-actions">
+        <form method="post" action="/admin/modules/<%= module.id %>/publish" style="display:inline">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-primary btn-sm" type="submit">Publish</button>
+        </form>
+        <form method="post" action="/admin/modules/<%= module.id %>/hide" style="display:inline">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-secondary btn-sm" type="submit">Hide</button>
+        </form>
+        <form method="post" action="/admin/modules/<%= module.id %>/delete" style="display:inline">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+        </form>
+      </div>
+    <% } %>
+  </header>
+
+  <%- include('../../partials/admin-tabs') %>
+
+  <div class="split">
+    <div class="stack">
+      <section class="panel">
+        <h2><%= module ? 'Module details' : 'Create module' %></h2>
+        <form method="post" action="<%= module ? '/admin/modules/' + module.id : '/admin/modules' %>" class="form-stack" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+          <div class="field">
+            <label class="field-label" for="title">Title</label>
+            <input id="title" name="title" type="text" value="<%= module ? module.title : '' %>" required minlength="3" maxlength="120">
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="description">Description</label>
+            <textarea id="description" name="description" rows="2" maxlength="500"><%= module ? module.description : '' %></textarea>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="status">Status</label>
+            <select id="status" name="status">
+              <option value="draft" <%= module && module.status === 'draft' ? 'selected' : '' %>>Draft</option>
+              <option value="published" <%= module && module.status === 'published' ? 'selected' : '' %>>Published</option>
+              <option value="hidden" <%= module && module.status === 'hidden' ? 'selected' : '' %>>Hidden</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field-label">
+              <input type="checkbox" name="require_sequential" value="1" <%= module && module.require_sequential ? 'checked' : '' %>>
+              Require sequential completion
+            </label>
+          </div>
+
+          <button class="btn btn-primary" type="submit"><%= module ? 'Save changes' : 'Create module' %></button>
+        </form>
+      </section>
+      <% if (module) { %>
+        <section class="panel panel-muted">
+          <h2>Add item</h2>
+          <form method="post" action="/admin/modules/<%= module.id %>/items" class="form-stack" novalidate>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="field">
+              <label class="field-label" for="item-type">Type</label>
+              <select id="item-type" name="type">
+                <option value="page">Page (text content)</option>
+                <option value="file">File upload</option>
+                <option value="link">External link</option>
+                <option value="quiz">Quiz</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="item-title">Title</label>
+              <input id="item-title" name="title" type="text" required maxlength="120">
+            </div>
+            <div class="field">
+              <label class="field-label" for="item-content">Content (for pages)</label>
+              <textarea id="item-content" name="content" rows="3" maxlength="5000"></textarea>
+            </div>
+            <div class="field">
+              <label class="field-label" for="item-url">URL (for links)</label>
+              <input id="item-url" name="url" type="url" maxlength="500">
+            </div>
+            <div class="field">
+              <label class="field-label" for="item-quiz">Quiz (for quizzes)</label>
+              <select id="item-quiz" name="quiz_id">
+                <option value="">Select a quiz...</option>
+                <% if (quizzes) { quizzes.forEach(function(q) { %>
+                  <option value="<%= q.id %>"><%= q.title %> (v<%= q.version %>)</option>
+                <% }); } %>
+              </select>
+            </div>
+            <button class="btn btn-primary" type="submit">Add item</button>
+          </form>
+
+          <hr class="section-divider">
+
+          <h3>Upload file</h3>
+          <form method="post" action="/admin/modules/<%= module.id %>/items/upload" class="form-stack" enctype="multipart/form-data" novalidate>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="field">
+              <label class="field-label" for="file-title">Title</label>
+              <input id="file-title" name="title" type="text" maxlength="120">
+            </div>
+            <div class="field">
+              <label class="field-label" for="file">File (PDF, PPTX, DOCX, PNG, JPG — max 20 MB)</label>
+              <input id="file" name="file" type="file" accept=".pdf,.pptx,.docx,.png,.jpg,.jpeg" required>
+            </div>
+            <button class="btn btn-primary" type="submit">Upload</button>
+          </form>
+        </section>
+      <% } %>
+    </div>
+
+    <div class="stack">
+      <% if (module && items && items.length > 0) { %>
+        <section class="panel">
+          <h2>Items (<%= items.length %>)</h2>
+          <ul class="module-item-list">
+            <% items.forEach(function (item) { %>
+              <li class="module-item">
+                <span class="module-item-type badge badge-outline"><%= item.type %></span>
+                <span class="module-item-title"><%= item.title %></span>
+                <form method="post" action="/admin/modules/<%= module.id %>/items/<%= item.id %>/delete" style="display:inline">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button class="btn btn-ghost btn-sm" type="submit">Remove</button>
+                </form>
+              </li>
+            <% }); %>
+          </ul>
+        </section>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<%- include('../../partials/footer') %>
