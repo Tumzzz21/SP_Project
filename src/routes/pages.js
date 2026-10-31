@@ -6,7 +6,6 @@ const { AppError } = require('../errors');
 const { requireActive, requireStudent, requireGuest, safeNextPath } = require('../auth/guards');
 const { readFlash } = require('../flash');
 const users = require('../db/users');
-const lessonsDb = require('../db/lessons');
 const modulesDb = require('../db/modules');
 const quizzesDb = require('../db/quizzes');
 const attemptsDb = require('../db/attempts');
@@ -178,17 +177,7 @@ function createPageRoutes({ db, config }) {
     return res.redirect(303, '/modules');
   });
 
-  router.get('/learn/:slug', requireActive, (req, res, next) => {
-    const lesson = lessonsDb.findPublishedBySlug(db, req.params.slug);
-    if (!lesson) {
-      return next(new AppError(404, 'That lesson is not available.', { code: 'lesson_not_found' }));
-    }
-    // Redirect to the module containing this lesson.
-    const mod = db.prepare("SELECT m.id FROM modules m JOIN module_items mi ON mi.module_id = m.id WHERE mi.title = ? AND m.status = 'published'").get(lesson.title);
-    if (mod) {
-      return res.redirect(303, '/modules/' + mod.id);
-    }
-    // Fallback: redirect to modules list
+  router.get('/learn/:slug', requireActive, (req, res) => {
     return res.redirect(303, '/modules');
   });
 

@@ -5,7 +5,7 @@ const express = require('express');
 const { AppError } = require('../errors');
 const { requireSession, requireActive, requireAdmin, wantsJson } = require('../auth/guards');
 const users = require('../db/users');
-const lessonsDb = require('../db/lessons');
+const modulesDb = require('../db/modules');
 const quizzesDb = require('../db/quizzes');
 
 /** Public shape of an account. Google subject identifiers stay server-side. */
@@ -23,18 +23,6 @@ function publicUser(user) {
   };
 }
 
-function publicLesson(lesson) {
-  return {
-    id: lesson.id,
-    slug: lesson.slug,
-    title: lesson.title,
-    summary: lesson.summary,
-    category: lesson.category,
-    readingMinutes: lesson.readingMinutes,
-    publishedAt: lesson.publishedAt,
-  };
-}
-
 function createApiRoutes({ db }) {
   const router = express.Router();
 
@@ -44,24 +32,6 @@ function createApiRoutes({ db }) {
 
   router.get('/api/me', requireSession, (req, res) => {
     res.json({ user: publicUser(req.user) });
-  });
-
-  router.get('/api/lessons', requireActive, (req, res) => {
-    const lessons = lessonsDb.listPublished(db);
-    res.json({ lessons: lessons.map(publicLesson) });
-  });
-
-  router.get('/api/lessons/:slug', requireActive, (req, res, next) => {
-    const lesson = lessonsDb.findPublishedBySlug(db, req.params.slug);
-    if (!lesson) {
-      return next(new AppError(404, 'That lesson is not available.', { code: 'lesson_not_found' }));
-    }
-    return res.json({
-      lesson: {
-        ...publicLesson(lesson),
-        content: lesson.content,
-      },
-    });
   });
 
   /**
@@ -111,7 +81,7 @@ function createApiRoutes({ db }) {
   router.get('/api/admin/summary', requireActive, requireAdmin, (req, res) => {
     res.json({
       users: users.countsByRole(db),
-      lessons: lessonsDb.countsByStatus(db),
+      modules: modulesDb.countsByStatus(db),
       quizzes: quizzesDb.countsByStatus(db),
     });
   });
@@ -119,4 +89,4 @@ function createApiRoutes({ db }) {
   return router;
 }
 
-module.exports = { createApiRoutes, publicUser, publicLesson, wantsJson };
+module.exports = { createApiRoutes, publicUser, wantsJson };

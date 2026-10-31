@@ -1,2 +1,0 @@
-CyberSafe listening on http://localhost:3000 (env: development)
-Database: D:\ai edit\cybersafe\data\cybersafe.db

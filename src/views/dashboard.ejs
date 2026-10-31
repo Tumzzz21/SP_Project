@@ -27,7 +27,7 @@
           <span class="tag-pill"><%- include('partials/icon', { name: 'modules', size: 13 }) %> <%= nextModule.title %></span>
         </div>
         <h2><%= nextItem.title %></h2>
-        <p class="muted continue-hero-summary"><%= nextItem.type ? nextItem.type.charAt(0).toUpperCase() + nextItem.type.slice(1) : 'Item' %> in <%= nextModule.title %></p>
+        <p class="muted continue-hero-summary"><%= nextItem.type ? nextItem.type.charAt(0).toUpperCase() + nextItem.type.slice(1) : 'Item' %> in <%= nextModule.title %> — your next unfinished item.</p>
         <a class="btn btn-primary btn-hero" href="/modules/<%= nextModule.id %>">
           Continue <%- include('partials/icon', { name: 'arrow', size: 16 }) %>
         </a>

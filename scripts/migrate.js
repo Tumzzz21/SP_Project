@@ -78,74 +78,6 @@ function applyQuizFourOptions(db) {
     }
   }
 }
-function convertLessonsToModules(db) {
-  const { CATEGORIES } = require('../src/content/categories');
-  const lessonsDb = require('../src/db/lessons');
-  const modulesDb = require('../src/db/modules');
-  const quizzesDb = require('../src/db/quizzes');
-
-  for (const cat of CATEGORIES) {
-    // Idempotent: skip if module already exists
-    const existing = db.prepare('SELECT id FROM modules WHERE title = ?').get(cat.label);
-    let mod;
-    if (existing) {
-      mod = modulesDb.findById(db, existing.id);
-    } else {
-      mod = modulesDb.createModule(db, {
-        title: cat.label,
-        description: cat.description,
-        status: 'published',
-        sortOrder: 0,
-      });
-    }
-
-    // Get published lessons for this category
-    const lessons = db.prepare("SELECT * FROM lessons WHERE category = ? AND status = 'published' ORDER BY title").all(cat.key);
-    const existingItems = modulesDb.listItems(db, mod.id);
-    const existingTitles = new Set(existingItems.map(i => i.title));
-
-    // Add lesson pages
-    let sortOrder = existingItems.length;
-    for (const lesson of lessons) {
-      if (existingTitles.has(lesson.title)) continue;
-      const item = modulesDb.addItem(db, {
-        moduleId: mod.id,
-        type: 'page',
-        title: lesson.title,
-        content: lesson.content || '',
-        sortOrder: sortOrder++,
-      });
-      existingTitles.add(lesson.title);
-
-      // Carry over lesson completion
-      const completions = db.prepare("SELECT user_id FROM lesson_progress WHERE lesson_id = ? AND state = 'completed'").all(lesson.id);
-      for (const comp of completions) {
-        modulesDb.markComplete(db, comp.user_id, item.id);
-      }
-    }
-
-    // Add quizzes matching this category
-    const quizzes = db.prepare("SELECT * FROM quizzes WHERE status = 'published'").all();
-    const catKey = cat.key.replace(/s$/, ''); // 'passwords' -> 'password'
-    for (const quiz of quizzes) {
-      if (!quiz.slug.toLowerCase().includes(cat.key) && !quiz.slug.toLowerCase().includes(catKey)) continue;
-      // Check if already added
-      const hasQuiz = existingItems.some(i => i.type === 'quiz' && i.quiz_id === quiz.id);
-      if (hasQuiz) continue;
-      // Also check by title
-      const quizTitle = quiz.title;
-      if (existingTitles.has(quizTitle)) continue;
-      modulesDb.addItem(db, {
-        moduleId: mod.id,
-        type: 'quiz',
-        title: quizTitle,
-        quizId: quiz.id,
-        sortOrder: sortOrder++,
-      });
-      existingTitles.add(quizTitle);
-    }
-  }
-}
 function main() {
   const config = loadConfig();
   const db = openDatabase(config.database.file);
@@ -165,10 +97,6 @@ function main() {
     // Normalize quiz questions to exactly 4 options (A-D)
     applyQuizFourOptions(db);
     console.log('Applied quiz A-D normalization.');
-
-    // Convert lessons to modules
-    convertLessonsToModules(db);
-    console.log('Applied lesson-to-module conversion.');
 
     console.log(`Database file: ${config.database.file}`);
   } finally {

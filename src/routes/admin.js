@@ -3,17 +3,16 @@
 const express = require('express');
 const { requireActive, requireAdmin } = require('../auth/guards');
 const users = require('../db/users');
-const lessonsDb = require('../db/lessons');
 const modulesDb = require('../db/modules');
 const quizzesDb = require('../db/quizzes');
 const attemptsDb = require('../db/attempts');
 const history = require('../history');
 const { readFlash } = require('../flash');
-const { createAdminLessonRoutes } = require('./admin-lessons');
 const { createAdminQuizRoutes } = require('./admin-quizzes');
 const { createAdminAttemptRoutes } = require('./admin-attempts');
 const { createAdminModuleRoutes } = require('./admin-modules');
 const { createAdminStudentsRoutes } = require('./admin-students');
+const { createAdminUsersRoutes } = require('./admin-users');
 
 /**
  * Admin area. Every route below sits behind requireActive + requireAdmin.
@@ -23,9 +22,10 @@ function createAdminRoutes({ db }) {
   const guard = [requireActive, requireAdmin];
 
   const sections = [
-    ['/admin/lessons', 'lessons'],
     ['/admin/quizzes', 'quizzes'],
     ['/admin/modules', 'modules'],
+    ['/admin/students', 'students'],
+    ['/admin/users', 'users'],
     ['/admin/attempts', 'attempts'],
   ];
   router.use((req, res, next) => {
@@ -81,11 +81,11 @@ function createAdminRoutes({ db }) {
     });
   });
 
-  router.use('/admin/lessons', ...guard, createAdminLessonRoutes({ db }));
   router.use('/admin/quizzes', ...guard, createAdminQuizRoutes({ db }));
   router.use('/admin/attempts', ...guard, createAdminAttemptRoutes({ db }));
   router.use('/admin/modules', ...guard, createAdminModuleRoutes({ db }));
   router.use('/admin', createAdminStudentsRoutes({ db }));
+  router.use('/admin', createAdminUsersRoutes({ db }));
 
   return router;
 }

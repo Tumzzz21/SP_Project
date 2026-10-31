@@ -287,3 +287,14 @@ node --test tests/password-auth.test.js tests/roles.test.js tests/admin.test.js 
 - Dashboard statistics come from real rows, but there is no analytics beyond counts and average score.
 - Admin content management covers lessons and quizzes only: no bulk import, no media uploads, no per-lesson prerequisites or ordering, and archiving (not deletion) is the only way to retire content. A quiz slug can hold several versions but cannot be renamed after creation.
 - There is no email notification, avatar upload, leaderboard, certificate, chat, or AI feature – out of scope by design.
+
+
+## Security notes
+
+- AUTH_DEV_MODE defaults to false. The hidden /auth/dev-login route is disabled unless explicitly enabled (development only; refused in production).
+- Passwords are hashed with scrypt (src/auth/passwords.js); sessions are opaque tokens stored as SHA-256 hashes in SQLite with HttpOnly, SameSite=Lax cookies.
+- CSRF uses a double-submit token bound to the session; required on all state-changing requests.
+- File uploads (avatars, module files) are validated by MIME type and magic bytes, size-limited, and stored under randomized names.
+- npm audit reports 4 moderate vulnerabilities via ejs -> jake -> filelist -> minimatch (DoS via glob). ejs is used for server-side rendering only; the vulnerable jake/filelist/minimatch are dev-tooling of ejs, not on the request path. Full fix requires npm audit fix --force (downgrades ejs, breaking). Deferred.
+- .env, data/, node_modules/ are gitignored. Never commit secrets.
+

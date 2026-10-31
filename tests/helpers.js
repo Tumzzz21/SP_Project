@@ -1,7 +1,6 @@
 'use strict';
 
 const { createApp } = require('../src/app');
-const lessonsDb = require('../src/db/lessons');
 const modulesDb = require('../src/db/modules');
 const { openDatabase, runMigrations } = require('../src/db');
 const sessions = require('../src/db/sessions');
@@ -93,25 +92,11 @@ function login(db, config, user, { ttlHours = 2 } = {}) {
   };
 }
 
-/** One published lesson per category plus a published and a draft quiz. */
+/** One published module plus a published and a draft quiz. */
 function seedContent(db) {
   const now = new Date().toISOString();
-  const insertLesson = db.prepare(
-    `INSERT INTO lessons (slug, title, summary, category, content, reading_minutes, status, created_at, updated_at, published_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  );
-  insertLesson.run(
-    'phishing-test',
-    'Test phishing lesson',
-    'A lesson used by the test suite.',
-    'phishing',
-    '## Heading\n\nBody text with <script>alert(1)</script> and **bold**.',
-    4,
-    'published',
-    now,
-    now,
-    now,
-  );
+  const mod = modulesDb.createModule(db, { title: 'Test module', description: 'A module used by the test suite.', status: 'published', sortOrder: 0 });
+  const item = modulesDb.addItem(db, { moduleId: mod.id, type: 'page', title: 'Test module item', content: '## Heading\n\nBody text with <script>alert(1)</script> and **bold**.', sortOrder: 0 });
 
   const quiz = db
     .prepare(
@@ -140,10 +125,7 @@ function seedContent(db) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run('draft-quiz', 1, 'Draft quiz', 'Not visible to students.', 'draft', 70, now, now, null);
 
-  const mod = modulesDb.createModule(db, { title: 'Test module', description: 'A module used by the test suite.', status: 'published', sortOrder: 0 });
-  const item = modulesDb.addItem(db, { moduleId: mod.id, type: 'page', title: 'Test module item', content: 'Body', sortOrder: 0 });
-
-  return { quizId, questionId, lessonSlug: 'phishing-test', quizSlug: 'phishing-test-quiz', moduleId: mod.id, itemId: item.id };
+  return { quizId, questionId, quizSlug: 'phishing-test-quiz', moduleId: mod.id, itemId: item.id };
 }
 
 module.exports = { testConfig, createContext, createUser, login, seedContent };

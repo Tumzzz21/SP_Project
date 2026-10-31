@@ -17,7 +17,8 @@
   <%- include('../partials/admin-tabs') %>
 
   <form method="get" action="/admin/students" class="filter-bar" style="margin-bottom: var(--space-md);">
-    <input type="search" name="q" value="<%= q %>" placeholder="Search by name or email" class="input">
+    <label for="student-search" class="sr-only">Search students</label>
+    <input id="student-search" type="search" name="q" value="<%= q %>" placeholder="Search by name or email" aria-label="Search students">
     <input type="hidden" name="sort" value="<%= sort %>">
     <input type="hidden" name="dir" value="<%= dir %>">
     <button class="btn btn-secondary" type="submit">Search</button>

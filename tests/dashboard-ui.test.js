@@ -41,7 +41,7 @@ test('the continue card is a hero with a module title and CTA', async () => {
 });
 
 test('your modules list shows progress bars linking to /modules/:id', async () => {
-  const { ctx, user, auth } = await signedInDashboard();
+  const { ctx, auth } = await signedInDashboard();
   const seed = seedContent(ctx.db);
   const response = await request(ctx.app).get('/dashboard').set('Cookie', auth.cookie);
 

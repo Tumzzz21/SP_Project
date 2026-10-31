@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 
-const { createContext, createUser, login, seedContent } = require('./helpers');
+const { createContext, createUser, login } = require('./helpers');
 
 function setupRoles() {
   const ctx = createContext();

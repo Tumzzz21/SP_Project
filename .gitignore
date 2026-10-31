@@ -25,3 +25,11 @@ coverage/
 .nyc_output/
 dist/
 tmp/
+
+# Dev artifacts and one-off scripts
+fix-*.js
+srv-*.txt
+countq.js
+inspect-schema.js
+list-testdata.js
+cleanup.js
