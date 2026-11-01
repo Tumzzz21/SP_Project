@@ -20,7 +20,7 @@ test('dashboard shows module progress from real records', async () => {
 
   const dashboard = await request(app).get('/dashboard').set('Cookie', auth.cookie);
   assert.equal(dashboard.status, 200);
-  assert.match(dashboard.text, /1<span class="stat-suffix">\/1<\/span>/);
+  assert.match(dashboard.text, /1<span class="stat-suffix"> \/ 1<\/span>/);
   assert.match(dashboard.text, /100<span class="stat-suffix">%<\/span>/);
 
   const learn = await request(app).get('/learn').set('Cookie', auth.cookie);
@@ -90,7 +90,7 @@ test('empty progress renders explicit empty states instead of fake numbers', asy
   assert.equal(dashboard.status, 200);
   assert.match(dashboard.text, /No modules are published yet/);
   assert.match(dashboard.text, /No quiz attempts yet/);
-  assert.match(dashboard.text, /0<span class="stat-suffix">\/0<\/span>/);
+  assert.match(dashboard.text, /0<span class="stat-suffix"> \/ 0<\/span>/);
 
   const learn = await request(app).get('/learn').set('Cookie', auth.cookie);
   assert.equal(learn.status, 303);
