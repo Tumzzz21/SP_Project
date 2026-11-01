@@ -52,7 +52,7 @@ It seeds two accounts using the same code paths the app uses (`createPendingUser
 
 | Email                  | Password                |
 | ---------------------- | ----------------------- |
-| `student@example.test` | `cybersafe-local-demo` |
+| `demo.ana@example.test` | `cybersafe-local-demo` |
 | `admin@example.test`   | `cybersafe-local-demo` |
 
 The script creates a student and an admin account for local testing. The password is shared by both accounts and is only for local use. The intended usernames are `student1` and `admin1`; if one is already taken by an existing local account the script appends a number instead of failing (`student1` → `student11`), so the exact username may vary on a database that already has users — the script prints whichever usernames it created. The script is idempotent (re-running it reports the accounts as already active and never overwrites an existing password), refuses to run unless `AUTH_DEV_MODE=true`, and never touches production. These are throwaway local accounts — do not reuse these email addresses or this password anywhere real.
