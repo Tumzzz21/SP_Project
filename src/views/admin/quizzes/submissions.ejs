@@ -1,0 +1,58 @@
+<%- include('../../partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('../../partials/flash') %>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/admin/quizzes">Quizzes</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Submissions</span>
+  </nav>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Admin · Submissions</p>
+      <h1><%= quiz.title %> — Submissions</h1>
+      <p class="muted">v<%= quiz.version %> · <%= submissions.length %> submitted attempt(s)</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <% if (!submissions || submissions.length === 0) { %>
+      <div class="empty-state"><p class="muted">No submitted attempts yet.</p></div>
+    <% } else { %>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Email</th>
+            <th>Version</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Submitted</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% submissions.forEach(function (a) { %>
+            <tr>
+              <td><%= a.studentName %></td>
+              <td><%= a.studentEmail %></td>
+              <td>v<%= a.version %></td>
+              <td><%= a.maxPoints > 0 ? Math.round((a.scorePoints * 100) / a.maxPoints) : 0 %>%</td>
+              <td><%= (a.scorePoints * 100 / a.maxPoints) >= (quiz.passingScorePercent || 0) ? 'Pass' : 'Fail' %></td>
+              <td><%= formatDate(a.submittedAt) %></td>
+              <td><a class="link-arrow" href="/admin/attempts/<%= a.id %>">Review</a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </section>
+
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/admin/quizzes">Back to quizzes</a>
+  </div>
+</main>
+<%- include('../../partials/footer') %>
+EOF

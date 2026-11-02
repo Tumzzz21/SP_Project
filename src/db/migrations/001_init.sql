@@ -156,7 +156,9 @@ CREATE TABLE quiz_attempts (
   score_points INTEGER NOT NULL DEFAULT 0 CHECK (score_points >= 0),
   max_points   INTEGER NOT NULL DEFAULT 0 CHECK (max_points >= 0),
   started_at   TEXT    NOT NULL,
-  submitted_at TEXT
+    submitted_at TEXT,
+  admin_feedback TEXT,
+  feedback_published_at TEXT
 );
 
 CREATE INDEX quiz_attempts_user ON quiz_attempts (user_id, submitted_at);

@@ -79,6 +79,18 @@
       <% }); %>
     </ol>
   <% } %>
+  <% if (attempt.status === 'submitted') { %>
+    <section class="panel" style="margin-top:1rem;">
+      <h2>Admin feedback</h2>
+      <form method="post" action="/admin/attempts/<%= attempt.id %>/feedback" class="form-stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <textarea name="feedback" rows="4" maxlength="2000"><%= attempt.adminFeedback || '' %></textarea>
+        <label><input type="checkbox" name="publish" value="1" <%= attempt.feedbackPublishedAt ? 'checked' : '' %>> Publish to student</label>
+        <button class="btn btn-primary btn-sm" type="submit">Save feedback</button>
+      </form>
+    </section>
+  <% } %>
+
 </main>
 
 <%- include('../../partials/footer') %>

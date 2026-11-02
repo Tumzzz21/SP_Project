@@ -5,6 +5,7 @@ const express = require('express');
 const { AppError } = require('../errors');
 const quizzesDb = require('../db/quizzes');
 const { validateAnswerKey } = require('../grading');
+const attemptsDb = require('../db/attempts');
 const { readFlash } = require('../flash');
 const { validateQuizInput, parseQuestionForm, parseIdParam } = require('../validation');
 
@@ -38,14 +39,7 @@ function createAdminQuizRoutes({ db }) {
 
   // ---------------------------------------------------------------- list
   router.get('/', (req, res) => {
-    res.render('admin/quizzes/index', {
-      pageTitle: 'Manage quizzes | CyberSafe',
-      bodyClass: 'page-app',
-      activeNav: 'admin',
-      versions: quizzesDb.listVersionsForAdmin(db),
-      counts: quizzesDb.countsByStatus(db),
-      flash: readFlash(req),
-    });
+    return res.redirect(303, '/admin/attempts');
   });
 
   // -------------------------------------------------------- create form
@@ -305,6 +299,21 @@ function createAdminQuizRoutes({ db }) {
       activeNav: 'admin',
       quiz,
       questions,
+      flash: readFlash(req),
+    });
+  });
+
+  router.get('/:id/submissions', (req, res, next) => {
+    const id = Number(req.params.id);
+    const quiz = quizzesDb.findById(db, id);
+    if (!quiz) return next(new (require('../errors').AppError)(404, 'Quiz not found.', { code: 'not_found' }));
+    const submissions = attemptsDb.listForQuiz(db, id);
+    res.render('admin/quizzes/submissions', {
+      pageTitle: `Submissions: ${quiz.title} | CyberSafe`,
+      bodyClass: 'page-app',
+      activeNav: 'admin',
+      quiz,
+      submissions,
       flash: readFlash(req),
     });
   });

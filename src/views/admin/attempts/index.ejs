@@ -14,46 +14,35 @@
     </div>
   </header>
 
-  <%- include('../../partials/admin-tabs') %>
 
   <section class="section-tight">
-    <% if (attempts.length === 0) { %>
+    <% if (!quizzes || quizzes.length === 0) { %>
       <div class="empty-state">
-        <h3>No attempts yet</h3>
-        <p class="muted">Submitted and expired attempts appear here, newest first, once students take a quiz.</p>
+        <h3>No quizzes yet</h3>
+        <p class="muted">Published quizzes will appear here with submission stats.</p>
       </div>
     <% } else { %>
       <div class="table-wrap">
         <table class="data-table">
-          <caption class="sr-only">Quiz attempts, newest first</caption>
           <thead>
             <tr>
-              <th scope="col">Student</th>
-              <th scope="col">Quiz version</th>
-              <th scope="col">Score</th>
+              <th scope="col">Quiz</th>
               <th scope="col">Status</th>
-              <th scope="col">Submitted</th>
+              <th scope="col">Submissions</th>
+              <th scope="col">Unique students</th>
+              <th scope="col">Avg score</th>
               <th scope="col"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
-            <% attempts.forEach(function (attempt) { %>
+            <% quizzes.forEach(function (q) { %>
               <tr>
-                <td>
-                  <strong><%= attempt.studentName || '—' %></strong><br>
-                  <span class="muted small"><%= attempt.studentEmail %></span>
-                </td>
-                <td><%= attempt.title %> <span class="muted">v<%= attempt.version %></span></td>
-                <td>
-                  <% if (attempt.status === 'submitted') { %>
-                    <strong><%= attempt.scorePoints %>/<%= attempt.maxPoints %></strong>
-                  <% } else { %>
-                    —
-                  <% } %>
-                </td>
-                <td><span class="badge badge-<%= attempt.status === 'submitted' ? 'success' : 'warning' %>"><%= attempt.status %></span></td>
-                <td><%= formatDateTime(attempt.submittedAt || attempt.startedAt) %></td>
-                <td><a class="link-arrow" href="/admin/attempts/<%= attempt.id %>">Review</a></td>
+                <td><strong><%= q.title %></strong><br><span class="muted small">v<%= q.version %></span></td>
+                <td><%= q.status %></td>
+                <td><%= q.totalSubmissions %></td>
+                <td><%= q.uniqueStudents %></td>
+                <td><%= q.avgScore %>%</td>
+                <td><a class="btn btn-primary btn-sm" href="/admin/quizzes/<%= q.id %>/submissions">View submissions</a></td>
               </tr>
             <% }); %>
           </tbody>
