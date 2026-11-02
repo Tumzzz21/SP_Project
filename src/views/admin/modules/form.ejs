@@ -73,44 +73,6 @@
         </form>
       </section>
       <% if (module) { %>
-        <section class="panel panel-muted">
-          <h2>Add item</h2>
-          <form method="post" action="/admin/modules/<%= module.id %>/items" class="form-stack" novalidate>
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <div class="field">
-              <label class="field-label" for="item-type">Type</label>
-              <select id="item-type" name="type">
-                <option value="page">Page (text content)</option>
-                <option value="file">File upload</option>
-                <option value="link">External link</option>
-                <option value="quiz">Quiz</option>
-              </select>
-            </div>
-            <div class="field">
-              <label class="field-label" for="item-title">Title</label>
-              <input id="item-title" name="title" type="text" required maxlength="120">
-            </div>
-            <div class="field">
-              <label class="field-label" for="item-content">Content (for pages)</label>
-              <textarea id="item-content" name="content" rows="3" maxlength="5000"></textarea>
-            </div>
-            <div class="field">
-              <label class="field-label" for="item-url">URL (for links)</label>
-              <input id="item-url" name="url" type="url" maxlength="500">
-            </div>
-            <div class="field">
-              <label class="field-label" for="item-quiz">Quiz (for quizzes)</label>
-              <select id="item-quiz" name="quiz_id">
-                <option value="">Select a quiz...</option>
-                <% if (quizzes) { quizzes.forEach(function(q) { %>
-                  <option value="<%= q.id %>"><%= q.title %> (v<%= q.version %>)</option>
-                <% }); } %>
-              </select>
-            </div>
-            <button class="btn btn-primary" type="submit">Add item</button>
-          </form>
-
-          <hr class="section-divider">
 
           <h3>Upload file</h3>
           <form method="post" action="/admin/modules/<%= module.id %>/items/upload" class="form-stack" enctype="multipart/form-data" novalidate>

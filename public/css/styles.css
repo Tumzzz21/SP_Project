@@ -1542,3 +1542,34 @@ html.text-large { font-size: 1.15rem; }
 .quiz-card legend { border: 0; padding: 0; margin: 0; }
 .quiz-card h2 { margin-top: 0; }
 @media (max-width: 390px) { .quiz-card { padding: 16px; } }
+
+/* Module reading layout */
+.module-header { display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end; justify-content:space-between; margin-bottom:1.5rem; }
+.module-progress { min-width:240px; }
+.module-layout { display:grid; grid-template-columns: 260px 1fr; gap:1.5rem; }
+.module-sidebar { position:sticky; top:1rem; align-self:start; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:1rem; max-height:80vh; overflow:auto; }
+.module-sidebar-title { margin:0 0 .75rem; font-size:1rem; }
+.module-toc { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.5rem; }
+.module-toc-link { display:flex; align-items:center; gap:.5rem; text-decoration:none; color:var(--foreground); padding:.5rem; border-radius:8px; }
+.module-toc-link:hover { background:rgba(255,255,255,.06); }
+.module-toc-item.is-complete .module-toc-link { opacity:.7; }
+.module-toc-num { font-weight:700; color:var(--accent); }
+.module-toc-text { flex:1; }
+.doc-toolbar { display:flex; justify-content:space-between; align-items:center; padding:.75rem 1rem; background:var(--card); border:1px solid var(--border); border-radius:12px; margin-bottom:1rem; }
+.doc-counter { font-weight:600; }
+.doc-actions { display:flex; gap:.5rem; }
+.content-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:1rem; margin-bottom:1rem; }
+.content-card-head { display:flex; align-items:center; gap:.5rem; margin-bottom:.75rem; }
+.content-card-body { margin-bottom:.75rem; }
+.content-card-actions { display:flex; gap:.5rem; }
+@media (max-width: 768px) {
+  .module-layout { grid-template-columns: 1fr; }
+  .module-sidebar { position:static; max-height:none; }
+}
+@media (max-width: 390px) {
+  .doc-toolbar { flex-direction:column; gap:.5rem; align-items:stretch; }
+  .doc-actions { justify-content:space-between; }
+  .btn-sm { min-height:44px; }
+}
+
+.doc-viewer { width:100%; height:70vh; border:1px solid var(--border); border-radius:8px; background:#fff; }
