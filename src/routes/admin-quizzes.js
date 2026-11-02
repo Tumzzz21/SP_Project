@@ -55,7 +55,7 @@ function createAdminQuizRoutes({ db }) {
       bodyClass: 'page-app',
       activeNav: 'admin',
       quiz: null,
-      values: { title: '', slug: '', description: '', passingScorePercent: 70 },
+      values: { title: '', slug: '', description: '', passingScorePercent: 70, maxAttempts: '' },
       errors: {},
       questions: [],
       blocks: [],
@@ -103,6 +103,7 @@ function createAdminQuizRoutes({ db }) {
       slug: quiz.slug,
       description: quiz.description || '',
       passingScorePercent: quiz.passingScorePercent,
+      maxAttempts: quiz.maxAttempts === null ? '' : quiz.maxAttempts,
     };
 
     if (!isDraft) {
@@ -183,6 +184,7 @@ function createAdminQuizRoutes({ db }) {
       slug: quiz.slug,
       description: quiz.description || '',
       passingScorePercent: quiz.passingScorePercent,
+      maxAttempts: quiz.maxAttempts === null ? '' : quiz.maxAttempts,
     };
 
     if (parsed.errors.length > 0) {
@@ -241,6 +243,7 @@ function createAdminQuizRoutes({ db }) {
           slug: quiz.slug,
           description: quiz.description || '',
           passingScorePercent: quiz.passingScorePercent,
+      maxAttempts: quiz.maxAttempts === null ? '' : quiz.maxAttempts,
         },
         errors: {},
         questions: answerKey,

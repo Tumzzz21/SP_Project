@@ -36,6 +36,8 @@
         <% } else { %>
           <% if (user.role === 'admin') { %>
             <a href="/admin" class="<%= activeNav === 'admin' ? 'is-active' : '' %>"<%= activeNav === 'admin' ? ' aria-current="page"' : '' %>>Admin</a>
+            <a href="/admin/students" class="<%= activeNav === 'students' ? 'is-active' : '' %>"<%= activeNav === 'students' ? ' aria-current="page"' : '' %>>Students</a>
+            <a href="/admin/users" class="<%= activeNav === 'users' ? 'is-active' : '' %>"<%= activeNav === 'users' ? ' aria-current="page"' : '' %>>Users</a>
             <a href="/dashboard" class="<%= activeNav === 'dashboard' ? 'is-active' : '' %>"<%= activeNav === 'dashboard' ? ' aria-current="page"' : '' %>>Dashboard</a>
             <a href="/modules" class="<%= activeNav === 'modules' ? 'is-active' : '' %>"<%= activeNav === 'modules' ? ' aria-current="page"' : '' %>>Modules</a>
             <a href="/quizzes" class="<%= activeNav === 'quizzes' ? 'is-active' : '' %>"<%= activeNav === 'quizzes' ? ' aria-current="page"' : '' %>>Quizzes</a>

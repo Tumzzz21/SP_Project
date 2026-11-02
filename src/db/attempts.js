@@ -268,7 +268,11 @@ function finalize(db, { attemptId, userId, scorePoints, maxPoints, results }) {
 
     const insert = db.prepare(
       `INSERT INTO attempt_answers (attempt_id, question_id, selected_option_id, is_correct, answered_at)
-       VALUES (?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (attempt_id, question_id) DO UPDATE SET
+         selected_option_id = excluded.selected_option_id,
+         is_correct = excluded.is_correct,
+         answered_at = excluded.answered_at`,
     );
     const answeredAt = nowIso();
     for (const result of results) {
@@ -298,6 +302,30 @@ function finalize(db, { attemptId, userId, scorePoints, maxPoints, results }) {
   }
 }
 
+/** Save (or replace) one answer while the attempt is still in progress. */
+function saveAnswer(db, { attemptId, userId, questionId, selectedOptionId }) {
+  const attempt = db
+    .prepare('SELECT status FROM quiz_attempts WHERE id = ? AND user_id = ?')
+    .get(attemptId, userId);
+  if (!attempt || attempt.status !== 'in_progress') return false;
+  const answeredAt = nowIso();
+  db.prepare(
+    `INSERT INTO attempt_answers (attempt_id, question_id, selected_option_id, is_correct, answered_at)
+     VALUES (?, ?, ?, NULL, ?)
+     ON CONFLICT (attempt_id, question_id) DO UPDATE SET
+       selected_option_id = excluded.selected_option_id,
+       is_correct = NULL,
+       answered_at = excluded.answered_at
+     WHERE (SELECT status FROM quiz_attempts WHERE id = attempt_id) = 'in_progress'`,
+  ).run(attemptId, questionId, selectedOptionId, answeredAt);
+  return true;
+}
+/** Saved (in-progress) answers for one attempt. */
+function savedAnswers(db, attemptId) {
+  return db
+    .prepare('SELECT question_id AS questionId, selected_option_id AS selectedOptionId FROM attempt_answers WHERE attempt_id = ?')
+    .all(attemptId);
+}
 module.exports = {
   ATTEMPT_TTL_HOURS,
   findById,
@@ -314,4 +342,6 @@ module.exports = {
   findForAdmin,
   participationSummary,
   finalize,
+  saveAnswer,
+  savedAnswers,
 };

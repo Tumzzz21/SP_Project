@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -124,6 +124,31 @@ test('a registered account cannot repeat setup', async () => {
   );
 });
 
+test('no mojibake sequences in source files', async () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = process.cwd();
+  const moji = /â€|Â |Ã[©¨¢]|�|ï»¿/;
+  let bad = [];
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!/\.(ejs|js|css|md)$/.test(entry.name)) continue;
+      if (full.includes('node_modules')) continue;
+      if (full.endsWith('setup.test.js')) continue;
+      const s = fs.readFileSync(full, 'utf8');
+      for (const line of s.split('\n')) {
+        if (moji.test(line)) bad.push(`${full}: ${line.trim().slice(0,80)}`);
+      }
+    }
+  }
+  walk(path.join(root, 'src'));
+  walk(path.join(root, 'public'));
+  walk(path.join(root, 'scripts'));
+  walk(path.join(root, 'tests'));
+  assert.equal(bad.length, 0, 'Mojibake sequences found in source:\n' + bad.join('\n'));
+});
 test('setup requires a CSRF token', async () => {
   const { app, db, config } = createContext();
   const auth = login(db, config, pendingUser(db));

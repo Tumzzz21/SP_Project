@@ -114,7 +114,8 @@ CREATE TABLE quizzes (
   status                TEXT    NOT NULL DEFAULT 'draft'
                           CHECK (status IN ('draft', 'published', 'archived')),
   passing_score_percent INTEGER NOT NULL DEFAULT 70
-                          CHECK (passing_score_percent BETWEEN 0 AND 100),
+                           CHECK (passing_score_percent BETWEEN 0 AND 100),
+  max_attempts INTEGER,
   created_at            TEXT    NOT NULL,
   updated_at            TEXT    NOT NULL,
   published_at          TEXT,
