@@ -15,6 +15,50 @@
     </div>
   </header>
 
+  <!-- Quick access cards -->
+  <section class="stat-grid" aria-label="Quick access">
+    <a href="/admin/modules" class="stat-card stat-card--green">
+      <div class="stat-head">
+        <span class="stat-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'modules', size: 20 }) %></span>
+        <p class="stat-label">Modules</p>
+      </div>
+      <p class="stat-value"><%= moduleCounts.total %><span class="stat-suffix"></span></p>
+      <p class="muted">Create, edit, publish modules</p>
+    </a>
+    <a href="/admin/quizzes" class="stat-card stat-card--cyan">
+      <div class="stat-head">
+        <span class="stat-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'quizzes', size: 20 }) %></span>
+        <p class="stat-label">Quizzes</p>
+      </div>
+      <p class="stat-value"><%= quizCounts.total %><span class="stat-suffix"></span></p>
+      <p class="muted">Create, publish, archive quizzes</p>
+    </a>
+    <a href="/admin/users" class="stat-card stat-card--blue">
+      <div class="stat-head">
+        <span class="stat-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'users', size: 20 }) %></span>
+        <p class="stat-label">Users</p>
+      </div>
+      <p class="stat-value"><%= userCounts.total %><span class="stat-suffix"></span></p>
+      <p class="muted">Manage accounts and roles</p>
+    </a>
+    <a href="/admin/students" class="stat-card stat-card--amber">
+      <div class="stat-head">
+        <span class="stat-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'trophy', size: 20 }) %></span>
+        <p class="stat-label">Students</p>
+      </div>
+      <p class="stat-value"><%= studentCounts.active %><span class="stat-suffix"></span></p>
+      <p class="muted">View student progress and status</p>
+    </a>
+    <a href="/admin/attempts" class="stat-card stat-card--rose">
+      <div class="stat-head">
+        <span class="stat-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'shield', size: 20 }) %></span>
+        <p class="stat-label">Attempt review</p>
+      </div>
+      <p class="stat-value"><%= attemptCounts.total %><span class="stat-suffix"></span></p>
+      <p class="muted">Review submitted quiz attempts</p>
+    </a>
+  </section>
+
   <%- include('../partials/admin-tabs') %>
 
   <section class="stat-grid" aria-label="Platform totals">

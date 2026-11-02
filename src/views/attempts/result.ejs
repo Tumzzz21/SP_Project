@@ -15,32 +15,21 @@
     <div>
       <p class="eyebrow">Quiz result · Version <%= quiz.version %></p>
       <h1><%= quiz.title %></h1>
-      <p class="muted">
-        Submitted <%= formatDateTime(attempt.submittedAt) %>. This result is tied to version
-        <%= quiz.version %> of the quiz, even if the quiz is edited later.
-      </p>
     </div>
   </header>
 
   <section class="panel result-summary" aria-label="Score summary">
     <div>
       <p class="stat-label">Your score</p>
-      <p class="result-score"><%= percentage %><span>%</span></p>
-      <p class="muted">
-        <%= attempt.scorePoints %> of <%= attempt.maxPoints %> correct
-        <% if (unansweredCount > 0) { %>
-          · <%= unansweredCount %> left blank
-        <% } %>
-      </p>
-    </div>
-    <div class="result-meter">
-      <div class="meter" role="img" aria-label="<%= percentage %>% of questions answered correctly">
-        <progress class="meter-fill" value="<%= percentage %>" max="100" aria-hidden="true"></progress>
-      </div>
-      <p class="muted">
-        Every completed attempt is kept in your history. A new attempt starts from the currently
-        published version of this quiz.
-      </p>
+      <p class="result-score"><%= attempt.scorePoints %><span> / <%= attempt.maxPoints %></span></p>
+      <p class="result-percent"><%= percentage %>%</p>
+      <% const passMark = (typeof quiz.passingScorePercent === 'number') ? quiz.passingScorePercent : 0; %>
+      <% if (percentage >= passMark) { %>
+        <span class="chip chip-pass">Passed</span>
+      <% } else { %>
+        <span class="chip chip-fail">Not passed</span>
+      <% } %>
+      <p class="muted">Submitted <%= formatDateTime(attempt.submittedAt) %>.</p>
     </div>
   </section>
 
@@ -50,51 +39,46 @@
       <p class="muted">Your selection is shown first, then the correct answer and why it is correct.</p>
     </div>
 
-    <ol class="review-list">
-      <% answers.forEach(function (answer) { %>
-        <li class="review-card">
-          <div class="review-head">
-            <p class="question-prompt">
-              <span class="question-number"><%= answer.position %></span>
-              <span><%= answer.prompt %></span>
-            </p>
-            <% if (answer.selectedOptionId === null) { %>
-              <span class="badge badge-warning">Not answered</span>
-            <% } else if (answer.isCorrect === 1) { %>
-              <span class="badge badge-success">Correct</span>
-            <% } else { %>
-              <span class="badge badge-danger">Incorrect</span>
+    <% answers.forEach(function (answer, i) { %>
+      <div class="quiz-card" style="margin-bottom:1rem;">
+        <h2>Question <%= i + 1 %></h2>
+        <p><%= answer.prompt %></p>
+        <% (answer.options || []).forEach(function (option) { %>
+          <label class="option-row" style="pointer-events:none;">
+            <input type="radio" disabled <%= answer.selectedOptionId === option.id ? 'checked' : '' %>>
+            <span class="option-circle" aria-hidden="true"></span>
+            <span class="option-text"><%= option.label %></span>
+            <% if (answer.selectedOptionId === option.id) { %>
+              <% if (answer.isCorrect === 1) { %>
+                <span class="chip chip-pass">Correct</span>
+              <% } else { %>
+                <span class="chip chip-fail">Incorrect</span>
+              <% } %>
             <% } %>
-          </div>
-
-          <dl class="answer-compare">
-            <div>
-              <dt>Your answer</dt>
-              <dd><%= answer.selectedLabel === null ? 'No answer selected' : (answer.selectedPosition ? String.fromCharCode(64 + answer.selectedPosition) + '. ' : '') + answer.selectedLabel %></dd>
-            </div>
-            <div>
-              <dt>Correct answer</dt>
-              <dd><%= answer.correctLabel ? (answer.correctPosition ? String.fromCharCode(64 + answer.correctPosition) + '. ' : '') + answer.correctLabel : 'Not available' %></dd>
-            </div>
-          </dl>
-
-          <div class="explanation">
-            <p><strong>Why:</strong> <%= answer.explanation %></p>
-          </div>
-        </li>
-      <% }); %>
-    </ol>
+            <% if (answer.selectedOptionId !== option.id && option.id === answer.correctOptionId) { %>
+              <span class="chip chip-pass">Correct answer</span>
+            <% } %>
+          </label>
+        <% }); %>
+        <% if (answer.selectedOptionId === null) { %>
+          <p class="muted" style="color:var(--accent-amber);">Not answered</p>
+        <% } %>
+        <div class="explanation-box">
+          <p><strong>Why:</strong> <%= answer.explanation %></p>
+        </div>
+      </div>
+    <% }); %>
   </section>
 
   <div class="page-actions">
-    <a class="btn btn-secondary" href="/quizzes/history">Back to history</a>
-    <% if (latestPublished) { %>
+    <% if (canRetry && latestPublished) { %>
       <form method="post" action="/quizzes/<%= latestPublished.slug %>/attempt" data-pending-form>
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <button class="btn btn-primary" type="submit">Take it again</button>
+        <button class="btn btn-primary" type="submit">Try again</button>
       </form>
     <% } %>
+    <a class="btn btn-secondary" href="/quizzes">Back to quizzes</a>
+    <a class="btn btn-secondary" href="/quizzes/history">View history</a>
   </div>
 </main>
-
 <%- include('../partials/footer') %>

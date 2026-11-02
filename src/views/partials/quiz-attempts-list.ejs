@@ -1,18 +1,21 @@
-<% if (!attempts || attempts.length === 0) { %>
+﻿<% if (!attempts || attempts.length === 0) { %>
   <%- include('empty-state', { title: emptyTitle || 'No quiz attempts yet', message: emptyMessage || 'Quizzes are short checks with explanations. Your results will appear here after you submit one.', ctaHref: ctaHref, ctaLabel: ctaLabel, icon: 'shieldSearch' }) %>
 <% } else { %>
-  <ul class="attempt-mini-list">
+  <ul class="attempt-list">
     <% attempts.forEach(function (attempt) { %>
-      <li>
-        <a href="<%= scope === 'all' ? '/admin/attempts/' + attempt.id : '/attempts/' + attempt.id %>">
-          <span class="attempt-mini-main">
-            <span class="attempt-mini-title"><%= attempt.title %></span>
-            <span class="muted">
-              <% if (scope === 'all') { %><%= attempt.studentUsername %> · <% } %>v<%= attempt.version %><% if (attempt.isBest) { %> · <span class="badge badge-success">Best</span><% } %>
+      <li class="attempt-row">
+        <a class="attempt-row-link" href="<%= scope === 'all' ? '/admin/attempts/' + attempt.id : '/attempts/' + attempt.id %>">
+          <div class="attempt-row-left">
+            <span class="attempt-row-title"><%= attempt.title %></span>
+            <span class="attempt-row-date muted">
+              <%= scope === 'all' ? (attempt.studentUsername + ' Â· ') : '' %>v<%= attempt.version %><% if (attempt.isBest) { %> Â· <span class="badge badge-success">Best</span><% } %> Â· <%= formatDateTime(attempt.submittedAt || attempt.startedAt) %>
             </span>
-          </span>
-          <span class="attempt-mini-score"><%= (attempt.maxPoints > 0) ? Math.round(attempt.scorePoints * 100 / attempt.maxPoints) : (attempt.percentage != null ? attempt.percentage : 0) %>%</span>
-          <% if (scope === 'all') { %><span class="link-arrow">Review <span aria-hidden="true">&rarr;</span></span><% } %>
+          </div>
+          <div class="attempt-row-right">
+            <span class="attempt-row-score"><%= (attempt.maxPoints > 0) ? Math.round(attempt.scorePoints * 100 / attempt.maxPoints) : (attempt.percentage != null ? attempt.percentage : 0) %>%</span>
+            <span class="badge <%= attempt.status === 'submitted' ? 'badge-success' : (attempt.status === 'expired' ? 'badge-warning' : 'badge-outline') %>"><%= attempt.status === 'submitted' ? 'Submitted' : (attempt.status === 'expired' ? 'Expired' : 'In progress') %></span>
+            <span class="attempt-row-review link-arrow">Review <span aria-hidden="true">&rarr;</span></span>
+          </div>
         </a>
       </li>
     <% }); %>

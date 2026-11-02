@@ -149,6 +149,7 @@ function validateQuizInput(input, { requireSlug = true } = {}) {
   const slug = normaliseSlug(input.slug);
   const description = String(input.description ?? '').replace(/\s+/g, ' ').trim();
   const passRaw = String(input.passingScorePercent ?? '').trim();
+  const attemptsRaw = String(input.maxAttempts ?? '').trim();
   const errors = {};
 
   if (!title) errors.title = 'Enter a quiz title.';
@@ -167,8 +168,13 @@ function validateQuizInput(input, { requireSlug = true } = {}) {
     errors.passingScorePercent = 'Passing score must be a whole number between 0 and 100.';
   }
 
+  const maxAttempts = attemptsRaw === '' ? null : Number.parseInt(attemptsRaw, 10);
+  if (maxAttempts !== null && (!Number.isInteger(maxAttempts) || maxAttempts < 1)) {
+    errors.maxAttempts = 'Max attempts must be a positive whole number, or blank for unlimited.';
+  }
+
   return {
-    values: { title, slug, description, passingScorePercent },
+    values: { title, slug, description, passingScorePercent, maxAttempts },
     errors,
   };
 }

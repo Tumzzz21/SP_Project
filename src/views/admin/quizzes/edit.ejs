@@ -97,7 +97,14 @@
                 aria-describedby="passingScorePercent-help<%= errors.passingScorePercent ? ' passingScorePercent-error' : '' %>">
               <p class="field-help" id="passingScorePercent-help">Whole number 0–100, shown to students as the target.</p>
               <% if (errors.passingScorePercent) { %><p class="field-error" id="passingScorePercent-error"><%= errors.passingScorePercent %></p><% } %>
-            </div>
+              </div>
+              <div class="field<%= errors.maxAttempts ? ' field-invalid' : '' %>">
+              <label class="field-label" for="maxAttempts">Max attempts (blank = unlimited)</label>
+              <input id="maxAttempts" name="maxAttempts" type="number" min="1" value="<%= values.maxAttempts %>"
+                aria-describedby="maxAttempts-help<%= errors.maxAttempts ? ' maxAttempts-error' : '' %>">
+              <p class="field-help" id="maxAttempts-help">How many times a student may take this quiz.</p>
+              <% if (errors.maxAttempts) { %><p class="field-error" id="maxAttempts-error"><%= errors.maxAttempts %></p><% } %>
+              </div>
 
             <button class="btn btn-primary" type="submit"><%= quiz ? 'Save details' : 'Create draft quiz' %></button>
           </form>

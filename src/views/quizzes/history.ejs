@@ -1,4 +1,4 @@
-<%- include('../partials/head') %>
+﻿<%- include('../partials/head') %>
 
 <main id="main" class="shell page">
   <%- include('../partials/flash') %>
@@ -7,26 +7,23 @@
     <div>
       <p class="eyebrow">Your quizzes</p>
       <h1>Attempt history</h1>
-      <p class="muted">
-        Every completed attempt is kept. Results are tied to the quiz version you took, so later
-        edits do not rewrite the past.
-      </p>
+      <p class="muted">Your completed attempts and scores.</p>
     </div>
     <div class="page-head-actions">
       <a class="btn btn-secondary" href="/quizzes">Browse quizzes</a>
     </div>
   </header>
 
-  <section class="stat-grid" aria-label="Quiz summary">
+  <section class="quiz-history-stats" aria-label="Quiz summary">
     <div class="stat-card">
       <p class="stat-label">Completed attempts</p>
       <p class="stat-value"><%= summary.completedAttempts %></p>
-      <p class="muted">Submitted attempts across every quiz you have taken.</p>
+      <p class="muted">Submitted attempts.</p>
     </div>
     <div class="stat-card">
       <p class="stat-label">Quizzes attempted</p>
       <p class="stat-value"><%= summary.quizzesAttempted %></p>
-      <p class="muted">Distinct quizzes with at least one completed attempt.</p>
+      <p class="muted">Distinct quizzes.</p>
     </div>
     <div class="stat-card">
       <p class="stat-label">Best score</p>
@@ -35,20 +32,19 @@
       </p>
       <p class="muted">
         <% if (summary.lastAttemptAt) { %>
-          Last record <%= formatDateTime(summary.lastAttemptAt) %>.
+          Last <%= formatDateTime(summary.lastAttemptAt) %>.
         <% } else { %>
-          No completed attempt yet.
+          No attempt yet.
         <% } %>
       </p>
     </div>
   </section>
 
   <% if (history.length === 0) { %>
-    <div class="empty-state">
+    <div class="empty-state quiz-history-empty">
       <h3>No quiz attempts yet</h3>
       <p class="muted">
-        Start a quiz from the catalogue. Your score, the questions you saw, and the explanations
-        will be available here afterwards.
+        Start a quiz from the catalogue. Your score and explanations appear here.
       </p>
       <a class="btn btn-primary" href="/quizzes">Open the quiz catalogue</a>
     </div>
@@ -93,7 +89,7 @@
               </td>
               <td>
                 <a class="link-arrow" href="/attempts/<%= entry.id %>">
-                  <%= entry.status === 'submitted' ? 'Review' : 'Details' %> <span aria-hidden="true">→</span>
+                  <%= entry.status === 'submitted' ? 'Review' : 'Details' %> <span aria-hidden="true">â†’</span>
                 </a>
               </td>
             </tr>

@@ -20,12 +20,12 @@ test('the dashboard renders the dark app shell with three icon stat cards', asyn
   assert.equal(response.status, 200);
   assert.match(response.text, /class="page-app"/);
 
-  const cards = response.text.match(/class="stat-card stat-card--[a-z]+"/g) || [];
+  const cards = response.text.match(/class="stat-card"/g) || [];
   assert.equal(cards.length, 3, 'three stat cards');
   const iconCount = (response.text.match(/class="stat-icon"[\s\S]{0,200}?<svg/g) || []).length;
   assert.equal(iconCount, 3, 'each stat card renders an inline svg icon');
 
-  assert.match(response.text, /0<span class="stat-suffix">\/0<\/span>/);
+  assert.match(response.text, /0<span class="stat-suffix"> \/ 0<\/span>/);
 });
 
 test('the continue card is a hero with a module title and CTA', async () => {
@@ -34,8 +34,8 @@ test('the continue card is a hero with a module title and CTA', async () => {
   const response = await request(ctx.app).get('/dashboard').set('Cookie', auth.cookie);
 
   assert.equal(response.status, 200);
-  assert.match(response.text, /class="continue-hero"/);
-  assert.match(response.text, /class="tag-pill"/);
+  assert.match(response.text, /class="dash-hero"/);
+  assert.match(response.text, /class="dash-hero-module"/);
   assert.match(response.text, /class="btn btn-primary btn-hero" href="\/modules\/\d+"/);
   assert.match(response.text, /Continue/);
 });
@@ -45,9 +45,9 @@ test('your modules list shows progress bars linking to /modules/:id', async () =
   const seed = seedContent(ctx.db);
   const response = await request(ctx.app).get('/dashboard').set('Cookie', auth.cookie);
 
-  const rows = response.text.match(/class="module-row"/g) || [];
+  const rows = response.text.match(/class="dash-mod-row"/g) || [];
   assert.equal(rows.length, 1, 'one row per published module');
-  assert.match(response.text, /class="meter meter--sm"/);
+  assert.match(response.text, /class="meter"/);
   assert.match(response.text, /href="\/modules\/\d+"/);
 
   await request(ctx.app)

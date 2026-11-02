@@ -1,0 +1,103 @@
+<%- include('../partials/head') %>
+
+<% const total = questions.length; const idx = (q || 1) - 1; const current = questions[idx]; const isLast = idx === total - 1; %>
+<main id="main" class="shell page">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/quizzes">Quizzes</a>
+    <span aria-hidden="true">/</span>
+    <a href="/quizzes/<%= quiz.slug %>"><%= quiz.title %></a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Attempt</span>
+  </nav>
+
+  <%- include('../partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Attempt · Version <%= quiz.version %></p>
+      <h1><%= quiz.title %></h1>
+    </div>
+  </header>
+
+  <% if (formError) { %>
+    <div class="notice notice-error" role="alert">
+      <p><strong>Your submission needs attention.</strong></p>
+      <p class="muted"><%= formError %></p>
+    </div>
+  <% } %>
+  <% if (blank && blank.length) { %>
+    <div class="notice notice-warn" role="alert">
+      <p>Please answer question(s) <%= blank.join(', ') %> before submitting.</p>
+    </div>
+  <% } %>
+  <% if (missing && missing.length) { %>
+    <div class="notice notice-warn" role="alert">
+      <p>Please answer question(s) <%= missing.join(', ') %> before submitting.
+        <% missing.forEach(function(m){ %> <a href="/attempts/<%= attempt.id %>?q=<%= m %>">Q<%= m %></a><% }); %>
+      </p>
+    </div>
+  <% } %>
+
+  <% if (summary) { %>
+    <p class="muted"><%= selected.size %> of <%= total %> answered</p>
+    <div class="quiz-progress-slim" role="progressbar" aria-valuenow="<%= selected.size %>" aria-valuemax="<%= total %>"><span style="width: <%= (selected.size/total*100) %>%"></span></div>
+    <% const blanks = questions.filter(function(qq){ return selected.get(qq.id) == null; }).map(function(qq,i){return i+1;}); %>
+    <% if (blanks.length) { %>
+      <div class="notice notice-warn" role="alert">
+        <p>Please answer question(s) <%= blanks.join(', ') %> before submitting.</p>
+      </div>
+    <% } %>
+    <% questions.forEach(function(qq, i){ const sel = selected.get(qq.id); %>
+      <div class="quiz-card" style="margin-bottom:1rem;">
+        <h2>Question <%= i+1 %></h2>
+        <p><%= qq.prompt %></p>
+        <% qq.options.forEach(function(option, oi){ %>
+          <label class="option-row" style="pointer-events:none;">
+            <input type="radio" disabled <%= sel === option.id ? 'checked' : '' %>>
+            <span class="option-circle" aria-hidden="true"></span>
+            <span class="option-text"><%= option.label %></span>
+          </label>
+        <% }); %>
+        <% if (sel == null) { %><p class="muted" style="color:var(--accent-amber);">Not answered</p><% } %>
+        <a class="btn btn-secondary" href="/attempts/<%= attempt.id %>?q=<%= i+1 %>">Edit</a>
+      </div>
+    <% }); %>
+    <% if (blanks.length) { %>
+      <button class="btn btn-primary" type="button" disabled>Submit</button>
+    <% } else { %>
+      <form method="post" action="/attempts/<%= attempt.id %>/submit">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary" type="submit" data-submit>Submit</button>
+      </form>
+    <% } %>
+    <a class="btn btn-secondary" href="/attempts/<%= attempt.id %>?q=<%= total %>">Back</a>
+  <% } else { %>
+  <div class="quiz-progress-slim" role="progressbar" aria-valuenow="<%= selected.size %>" aria-valuemax="<%= total %>"><span style="width: <%= (selected.size/total*100) %>%"></span></div>
+  <p class="muted" aria-live="polite">Question <%= q %> of <%= total %> · <%= selected.size %> answered</p>
+  <fieldset class="quiz-card" data-question="<%= current.id %>" data-attempt="<%= attempt.id %>" data-csrf="<%= csrfToken %>">
+    <legend class="sr-only">Question <%= q %></legend>
+    <h2>Question <%= q %></h2>
+    <p><%= current.prompt %></p>
+    <% current.options.forEach(function(option, oi){ %>
+      <label class="option-row">
+        <input type="radio" name="q_<%= current.id %>" value="<%= option.id %>" data-qid="<%= current.id %>" <%= selected.get(current.id) === option.id ? 'checked' : '' %>>
+        <span class="option-circle" aria-hidden="true"></span>
+        <span class="option-text"><%= option.label %></span>
+      </label>
+    <% }); %>
+  </fieldset>
+
+  <span id="saved-indicator" aria-live="polite" class="muted"></span>
+  <div class="quiz-actions">
+    <% if (q > 1) { %><button class="btn btn-secondary" type="button" data-prev data-url="/attempts/<%= attempt.id %>?q=<%= q-1 %>">Previous</button><% } %>
+    <button class="btn btn-secondary" type="button" data-skip data-url="/attempts/<%= attempt.id %>?q=<%= q+1 %>">Skip</button>
+    <% if (isLast) { %>
+      <button class="btn btn-primary" type="button" data-continue data-url="/attempts/<%= attempt.id %>?q=summary">Review and submit</button>
+    <% } else { %>
+      <button class="btn btn-primary" type="button" data-continue data-url="/attempts/<%= attempt.id %>?q=<%= q+1 %>">Continue</button>
+    <% } %>
+  </div>
+  <% } %>
+</main>
+<script src="/js/quiz.js" defer></script>
+<%- include('../partials/footer') %>

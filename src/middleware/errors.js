@@ -35,6 +35,7 @@ function errorHandler({ logger = console } = {}) {
       logger.error(
         `[${requestId}] ${req.method} ${req.originalUrl} failed (${err.code || 'unhandled'}): ${err.message}`,
       );
+      if (err.stack) logger.error(err.stack);
     }
 
     const copy = STATUS_COPY[status] || STATUS_COPY[500];

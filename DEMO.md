@@ -11,8 +11,8 @@
 
 ## Demo accounts
 - `admin@example.test` / `cybersafe-local-demo` (admin1)
-- `student@example.test` / `cybersafe-local-demo` (student1)
-- `aldrinlance19@gmail.com` (aldrin, student)
+- `demo.ana@example.test` / `cybersafe-local-demo` (Ana Reyes, student)
+- `aldrinlance19@gmail.com` / `cybersafe-local-demo` (aldrin, student)
 
 ## Scripts
 - `npm run db:migrate` — apply migrations

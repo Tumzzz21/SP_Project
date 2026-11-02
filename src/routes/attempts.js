@@ -54,7 +54,7 @@ function createAttemptRoutes({ db }) {
 
   function renderTake(res, attempt, quiz, { status = 200, formError = null, selected = new Map() } = {}) {
     const questions = quizzesDb.getPublicQuestions(db, quiz.id);
-    return res.status(status).render('attempts/take', {
+    return res.status(status).render('attempts/take-step', {
       pageTitle: `Attempt: ${quiz.title} | CyberSafe`,
       bodyClass: 'page-app',
       activeNav: 'quizzes',
@@ -65,6 +65,10 @@ function createAttemptRoutes({ db }) {
       formError,
       deadline: attemptsDb.expiresAt(attempt),
       flash: readFlash(res.req),
+      q: 1,
+      summary: false,
+      missing: [],
+      blank: [],
     });
   }
 
@@ -139,26 +143,105 @@ function createAttemptRoutes({ db }) {
 
     if (attempt.status === 'submitted') {
       const answers = attemptsDb.answersForReview(db, attempt.id);
+      const questions = quizzesDb.getPublicQuestions(db, quiz.id);
+      const byId = new Map(questions.map((q) => [q.id, q]));
+      const enriched = answers.map((a) => {
+        const q = byId.get(a.questionId) || {};
+        const opts = q.options || [];
+        const correct = opts.find((o) => o.position === a.correctPosition) || null;
+        return {
+          ...a,
+          options: opts,
+          correctOptionId: correct ? correct.id : null,
+        };
+      });
       return res.render('attempts/result', {
         pageTitle: `Result: ${quiz.title} | CyberSafe`,
         bodyClass: 'page-app',
         activeNav: 'quizzes',
         attempt,
         quiz,
-        answers,
-        correctCount: answers.filter((answer) => answer.isCorrect === 1).length,
-        unansweredCount: answers.filter((answer) => answer.selectedOptionId === null).length,
+        answers: enriched,
+        correctCount: enriched.filter((a) => a.isCorrect === 1).length,
+        unansweredCount: enriched.filter((a) => a.selectedOptionId === null).length,
         percentage: percent(attempt.scorePoints, attempt.maxPoints),
         latestPublished: quizzesDb.findPublishedBySlug(db, quiz.slug),
         flash: readFlash(req),
+        csrfToken: res.locals.csrfToken,
+        canRetry: (() => {
+          const max = quiz.maxAttempts;
+          if (!max) return true;
+          const c = db.prepare('SELECT COUNT(*) AS c FROM quiz_attempts WHERE user_id = ? AND quiz_id = ? AND status = ?').get(req.user.id, quiz.id, 'submitted').c;
+          return c < max;
+        })(),
       });
     }
 
-    return renderTake(res, attempt, quiz);
+    const questions = quizzesDb.getPublicQuestions(db, quiz.id);
+    const saved = new Map(attemptsDb.savedAnswers(db, attempt.id).map((a) => [a.questionId, a.selectedOptionId]));
+    const q = Math.max(1, Math.min(questions.length, Number(req.query.q) || 1));
+    const summary = req.query.q === 'summary';
+    return res.render('attempts/take-step', {
+      pageTitle: `Attempt: ${quiz.title} | CyberSafe`,
+      bodyClass: 'page-app',
+      activeNav: 'quizzes',
+      attempt,
+      quiz,
+      questions,
+      selected: saved,
+      formError: null,
+      deadline: attemptsDb.expiresAt(attempt),
+      flash: readFlash(req),
+      q,
+      summary,
+      missing: req.query.missing ? String(req.query.missing).split(',').map(Number) : [],
+      blank: req.query.blank ? String(req.query.blank).split(',').map(Number) : [],
+    });
+  });
+
+  // ----------------------------------------------------------- save one answer
+  router.post('/attempts/:id/answer', [requireActive], (req, res, next) => {
+    const attempt = loadOwned(req);
+    if (!attempt) return res.status(404).json({ ok: false, message: 'That attempt could not be found.' });
+    if (attempt.status !== 'in_progress') {
+      return res.status(409).json({ ok: false, message: 'This attempt is no longer open.' });
+    }
+    if (attemptsDb.isExpired(attempt)) {
+      attemptsDb.expire(db, attempt);
+      return res.status(409).json({ ok: false, message: 'This attempt has expired.' });
+    }
+    const quiz = quizzesDb.findById(db, attempt.quizId);
+    if (!quiz) return res.status(404).json({ ok: false, message: 'That attempt could not be found.' });
+
+    const questionId = Number(req.body && req.body.questionId);
+    const rawOption = req.body && req.body.selectedOptionId;
+    const selectedOptionId = rawOption === null ? null : Number(rawOption);
+
+    const questions = quizzesDb.getPublicQuestions(db, attempt.quizId);
+    const question = questions.find((q) => q.id === questionId);
+    if (!question) return res.status(400).json({ ok: false, message: 'That question is not part of this quiz.' });
+    if (selectedOptionId !== null) {
+      const validOption = question.options.some((o) => o.id === selectedOptionId);
+      if (!validOption) return res.status(400).json({ ok: false, message: 'That answer is not a valid option.' });
+    }
+
+    const ok = attemptsDb.saveAnswer(db, { attemptId: attempt.id, userId: req.user.id, questionId, selectedOptionId });
+    if (!ok) return res.status(409).json({ ok: false, message: 'This attempt is no longer open.' });
+    const answered = attemptsDb.savedAnswers(db, attempt.id).filter((a) => a.selectedOptionId != null).length;
+    return res.json({ ok: true, answered });
+  });
+
+  // ----------------------------------------------------------- blank check
+  router.get('/attempts/:id/blanks', [requireActive], (req, res) => {
+    const attempt = loadOwned(req);
+    if (!attempt) return res.status(404).json({ ok: false, blanks: [] });
+    const questions = quizzesDb.getPublicQuestions(db, attempt.quizId);
+    const saved = new Map(attemptsDb.savedAnswers(db, attempt.id).map((a) => [a.questionId, a.selectedOptionId]));
+    const blanks = questions.filter((q) => saved.get(q.id) == null).map((q) => q.position);
+    return res.json({ ok: true, blanks });
   });
 
   // ---------------------------------------------------------------- submit
-
   router.post('/attempts/:id/submit', studentOnly, (req, res, next) => {
     const attempt = loadOwned(req);
     if (!attempt) return next(new AppError(404, 'That attempt could not be found.', { code: 'attempt_not_found' }));
@@ -176,6 +259,24 @@ function createAttemptRoutes({ db }) {
       return res.redirect(303, `/attempts/${attempt.id}?notice=attempt_expired`);
     }
 
+    const questions = quizzesDb.getPublicQuestions(db, attempt.quizId);
+    const bodyAnswers = parseAnswerFields(req.body);
+    for (const qid of bodyAnswers.keys()) {
+      if (!questions.some((q) => q.id === qid)) {
+        return next(new AppError(400, 'That quiz submission did not match this quiz.', { code: 'unknown_question' }));
+      }
+    }
+    for (const [qid, optId] of bodyAnswers.entries()) {
+      const q = questions.find((x) => x.id === qid);
+      if (optId !== null && q && !q.options.some((o) => o.id === optId)) {
+        return next(new AppError(400, 'One of the selected answers is not a valid option for this question.', { code: 'invalid_option' }));
+      }
+    }
+    const savedMap = bodyAnswers.size > 0 ? bodyAnswers : new Map(attemptsDb.savedAnswers(db, attempt.id).map((a) => [a.questionId, a.selectedOptionId]));
+    const missing = questions.filter((q) => !savedMap.has(q.id) || savedMap.get(q.id) == null).map((q) => q.position);
+    if (missing.length > 0) {
+      return res.redirect(303, `/attempts/${attempt.id}?missing=${missing.join(',')}`);
+    }
     const answerKey = quizzesDb.getAnswerKey(db, attempt.quizId);
     if (!validateAnswerKey(answerKey).ok) {
       return next(
@@ -189,6 +290,10 @@ function createAttemptRoutes({ db }) {
     let graded;
     try {
       answers = parseAnswerFields(req.body);
+      if (answers.size === 0) {
+        const saved = attemptsDb.savedAnswers(db, attempt.id);
+        for (const a of saved) answers.set(a.questionId, a.selectedOptionId);
+      }
       graded = gradeAnswers(answerKey, answers);
     } catch (error) {
       if (error instanceof AppError) {
@@ -201,7 +306,7 @@ function createAttemptRoutes({ db }) {
       return next(error);
     }
 
-    const saved = attemptsDb.finalize(db, {
+    const finalized = attemptsDb.finalize(db, {
       attemptId: attempt.id,
       userId: req.user.id,
       scorePoints: graded.scorePoints,
@@ -209,7 +314,7 @@ function createAttemptRoutes({ db }) {
       results: graded.results,
     });
 
-    if (!saved) {
+    if (!finalized) {
       return res.redirect(303, `/attempts/${attempt.id}?notice=already_submitted`);
     }
     return res.redirect(303, `/attempts/${attempt.id}?notice=attempt_submitted`);

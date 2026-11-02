@@ -38,6 +38,7 @@ function createAdminRoutes({ db }) {
   router.get('/admin', ...guard, (req, res) => {
     const moduleCounts = modulesDb.countsByStatus(db);
     const quizCounts = quizzesDb.countsByStatus(db);
+    const attemptCounts = { total: db.prepare('SELECT COUNT(*) AS c FROM quiz_attempts').get().c };
     const draftModules = modulesDb.listForAdmin(db).filter((m) => m.status === 'draft');
     const draftQuizzes = quizzesDb.listVersionsForAdmin(db).filter((q) => q.status === 'draft');
     const studentsNotStarted = db
@@ -66,6 +67,7 @@ function createAdminRoutes({ db }) {
       studentCounts: users.studentStatusCounts(db),
       moduleCounts,
       quizCounts,
+      attemptCounts,
       participation: attemptsDb.participationSummary(db),
       recentAttempts: attemptsDb.listRecentForAdmin(db, { limit: 6 }),
       draftModules,

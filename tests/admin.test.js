@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -183,7 +183,7 @@ test('admin creates a draft quiz, saves questions, and publishes it', async () =
 });
 
 test('publishing an empty or invalid draft is refused', async () => {
-  const { app, db, adminAuth } = setupRoles();
+  const { app, db, adminAuth, config } = setupRoles();
   const seed = seedContent(db); // includes draft-quiz with no questions
 
   const draft = db.prepare("SELECT id FROM quizzes WHERE slug = 'draft-quiz'").get();
@@ -218,7 +218,7 @@ test('the quiz catalogue shows admin controls only to admins', async () => {
 });
 
 test('a published quiz version is immutable: no in-place edits, no direct SQL', async () => {
-  const { app, db, adminAuth } = setupRoles();
+  const { app, db, adminAuth, config } = setupRoles();
   const seed = seedContent(db);
 
   // Editing metadata of the published version is refused.
@@ -565,7 +565,7 @@ test('the admin tab row lists every section and marks the current one', async ()
     const hrefs = [...row.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
     assert.deepEqual(
       hrefs,
-      ['/admin', '/admin/students', '/admin/users', '/admin/attempts'],
+      ['/admin', '/admin/students', '/admin/users', '/admin/modules', '/admin/quizzes', '/admin/attempts'],
       `${path} lists all sections in order`,
     );
 
@@ -589,4 +589,13 @@ test('the dashboard header carries quick actions and the tab row carries section
 
   const row = adminTabRow(response.text);
   assert.ok(row, 'the tab row carries the section links');
+});
+
+test('last admin dashboard stats', async () => {
+  const { app, db, adminAuth, config } = setupRoles();
+  const user = createUser(db, {email:'last@example.test', username:'last1', displayName:'Last User'});
+  const auth = login(db, config, user);
+  const page = await request(app).get('/admin').set('Cookie', auth.cookie);
+  assert.equal(page.status, 200);
+  assert.equal(db.prepare('SELECT COUNT(*) AS c FROM users WHERE role=?').get('admin').c, 1);
 });

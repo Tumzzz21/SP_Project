@@ -19,6 +19,7 @@ const QUIZ_COLUMNS = `
   description,
   status,
   passing_score_percent AS passingScorePercent,
+  max_attempts AS maxAttempts,
   created_at            AS createdAt,
   updated_at            AS updatedAt,
   published_at          AS publishedAt
@@ -208,7 +209,7 @@ function findDraftForSlug(db, slug) {
  * Create the first version of a quiz as a draft (version = 1 for a new slug,
  * or latest+1 when the slug already has versions).
  */
-function createDraft(db, { slug, title, description, passingScorePercent = 70 }) {
+function createDraft(db, { slug, title, description, passingScorePercent = 70, maxAttempts = null }) {
   const latest = findLatestBySlug(db, slug);
   const version = latest ? latest.version + 1 : 1;
   const now = new Date().toISOString();
@@ -216,10 +217,10 @@ function createDraft(db, { slug, title, description, passingScorePercent = 70 })
     const result = db
       .prepare(
         `INSERT INTO quizzes (slug, version, title, description, status,
-                              passing_score_percent, created_at, updated_at, published_at)
-         VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, NULL)`,
+                              passing_score_percent, max_attempts, created_at, updated_at, published_at)
+         VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, NULL)`,
       )
-      .run(slug, version, title, description, passingScorePercent, now, now);
+      .run(slug, version, title, description, passingScorePercent, maxAttempts, now, now);
     return findById(db, Number(result.lastInsertRowid));
   } catch (error) {
     if (error && error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -232,7 +233,7 @@ function createDraft(db, { slug, title, description, passingScorePercent = 70 })
 }
 
 /** Update metadata of a DRAFT version only. */
-function updateDraft(db, quizId, { title, description, passingScorePercent }) {
+function updateDraft(db, quizId, { title, description, passingScorePercent, maxAttempts }) {
   const quiz = findById(db, quizId);
   if (!quiz) return null;
   if (quiz.status !== 'draft') {
@@ -242,9 +243,9 @@ function updateDraft(db, quizId, { title, description, passingScorePercent }) {
   }
   db.prepare(
     `UPDATE quizzes
-        SET title = ?, description = ?, passing_score_percent = ?, updated_at = ?
+        SET title = ?, description = ?, passing_score_percent = ?, max_attempts = ?, updated_at = ?
       WHERE id = ? AND status = 'draft'`,
-  ).run(title, description, passingScorePercent, new Date().toISOString(), quizId);
+  ).run(title, description, passingScorePercent, maxAttempts, new Date().toISOString(), quizId);
   return findById(db, quizId);
 }
 
@@ -320,10 +321,10 @@ function createNewVersion(db, sourceQuizId) {
       db
         .prepare(
           `INSERT INTO quizzes (slug, version, title, description, status,
-                                passing_score_percent, created_at, updated_at, published_at)
-           VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, NULL)`,
+                                passing_score_percent, max_attempts, created_at, updated_at, published_at)
+           VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, NULL)`,
         )
-        .run(source.slug, version, source.title, source.description, source.passingScorePercent, now, now)
+        .run(source.slug, version, source.title, source.description, source.passingScorePercent, source.maxAttempts, now, now)
         .lastInsertRowid,
     );
 
