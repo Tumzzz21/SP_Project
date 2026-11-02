@@ -17,7 +17,6 @@
     </div>
   </header>
 
-  <%- include('../../partials/admin-tabs') %>
 
   <section class="section-tight">
     <% if (versions.length === 0) { %>
@@ -52,8 +51,9 @@
                 <td><%= quiz.passingScorePercent %>%</td>
                 <td><%= formatDate(quiz.updatedAt) %></td>
                 <td>
-                  <a class="link-arrow" href="/admin/quizzes/<%= quiz.id %>">Open</a>
-                  <a class="link-arrow" href="/admin/quizzes/<%= quiz.id %>/preview">Preview</a>
+                  <a class="btn btn-secondary btn-sm" href="/admin/quizzes/<%= quiz.id %>">Open</a>
+                  <a class="btn btn-secondary btn-sm" href="/admin/quizzes/<%= quiz.id %>/preview">Preview</a>
+                  <% if (quiz.status === 'published') { %><a class="btn btn-primary btn-sm" href="/admin/quizzes/<%= quiz.id %>/submissions">Submissions</a><% } %>
                 </td>
               </tr>
             <% }); %>

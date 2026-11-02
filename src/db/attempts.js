@@ -212,6 +212,8 @@ function findForAdmin(db, attemptId) {
                 a.max_points   AS maxPoints,
                 a.started_at   AS startedAt,
                 a.submitted_at AS submittedAt,
+                a.admin_feedback AS adminFeedback,
+                a.feedback_published_at AS feedbackPublishedAt,
                 q.slug,
                 q.title,
                 q.version,
@@ -326,6 +328,19 @@ function savedAnswers(db, attemptId) {
     .prepare('SELECT question_id AS questionId, selected_option_id AS selectedOptionId FROM attempt_answers WHERE attempt_id = ?')
     .all(attemptId);
 }
+function listForQuiz(db, quizId) {
+  return db.prepare(
+    `SELECT a.id, a.user_id AS userId, a.quiz_id AS quizId, a.status,
+            a.score_points AS scorePoints, a.max_points AS maxPoints,
+            a.submitted_at AS submittedAt,
+            u.display_name AS studentName, u.email AS studentEmail, q.version
+       FROM quiz_attempts a
+       JOIN users u ON u.id = a.user_id
+       JOIN quizzes q ON q.id = a.quiz_id
+      WHERE a.quiz_id = ? AND a.status = 'submitted'
+      ORDER BY a.submitted_at DESC`,
+  ).all(quizId);
+}
 module.exports = {
   ATTEMPT_TTL_HOURS,
   findById,
@@ -339,6 +354,7 @@ module.exports = {
   statsForQuiz,
   answersForReview,
   listRecentForAdmin,
+  listForQuiz,
   findForAdmin,
   participationSummary,
   finalize,
