@@ -81,7 +81,6 @@ function createModuleRoutes({ db }) {
   // View file (authenticated)
   router.get('/files/:filename', requireActive, (req, res, next) => {
     const filename = req.params.filename;
-    // Find the module item with this file
     const item = db.prepare('SELECT * FROM module_items WHERE file_path = ?').get('uploads/' + filename);
     if (!item) return next(new (require('../errors').AppError)(404, 'File not found.', { code: 'not_found' }));
     const mod = modulesDb.findById(db, item.module_id);
@@ -92,8 +91,11 @@ function createModuleRoutes({ db }) {
     if (!fs.existsSync(filePath)) {
       return next(new (require('../errors').AppError)(404, 'File not found.', { code: 'not_found' }));
     }
-    res.setHeader('Content-Disposition', 'attachment; filename="' + (item.file_name || filename) + '"');
-    res.sendFile(path.resolve(filePath));
+    const download = req.query.download === '1';
+    const disposition = download ? 'attachment' : 'inline';
+    res.setHeader('Content-Security-Policy', "default-src 'self'; frame-ancestors 'self'");
+    res.setHeader('Content-Disposition', disposition + '; filename="' + (item.file_name || filename) + '"');
+    res.sendFile(path.resolve(filePath), { acceptRanges: true });
   });
 
   return router;

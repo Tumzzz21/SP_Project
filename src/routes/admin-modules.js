@@ -83,7 +83,6 @@ function createAdminModuleRoutes({ db }) {
       activeNav: 'admin',
       module: mod,
       items: modulesDb.listItems(db, id),
-      quizzes: quizzesDb.listPublished(db),
       flash: readFlash(req),
     });
   });
@@ -118,7 +117,7 @@ function createAdminModuleRoutes({ db }) {
   // Add item
   router.post('/:id/items', ...guard, (req, res) => {
     const moduleId = Number(req.params.id);
-    const type = ['page', 'file', 'link', 'quiz'].includes(req.body.type) ? req.body.type : 'page';
+    const type = ['page', 'file', 'link'].includes(req.body.type) ? req.body.type : 'page';
     const title = String(req.body.title || '').trim();
     if (!title) {
       req.session.flash = req.session.flash || [];
@@ -132,7 +131,6 @@ function createAdminModuleRoutes({ db }) {
       title,
       content: String(req.body.content || ''),
       url: String(req.body.url || '').trim(),
-      quizId: req.body.quiz_id ? Number(req.body.quiz_id) : null,
       sortOrder,
     });
     return res.redirect(303, '/admin/modules/' + moduleId + '?notice=item_added');
