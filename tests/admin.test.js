@@ -1224,3 +1224,94 @@ test('a draft module previews for admins but is not found for students', async (
   const missing = await request(app).get('/modules/99999').set('Cookie', adminAuth.cookie);
   assert.equal(missing.status, 404);
 });
+
+test('module pages render their markdown safely', async () => {
+  const { app, db, studentAuth } = setupRoles();
+  const seed = seedContent(db);
+
+  const page = await request(app).get(`/modules/${seed.moduleId}`).set('Cookie', studentAuth.cookie);
+  assert.equal(page.status, 200);
+  assert.match(page.text, /<h2>Heading<\/h2>/, 'markdown heading is rendered');
+  assert.match(page.text, /<strong>bold<\/strong>/, 'inline markdown is rendered');
+  assert.doesNotMatch(page.text, /## Heading/, 'no raw markdown leaks to students');
+  assert.doesNotMatch(page.text, /<script>alert\(1\)<\/script>/, 'stored HTML is escaped');
+});
+
+test('draft module files open for admins and stay closed for students', async () => {
+  const { app, db, adminAuth, studentAuth } = setupRoles();
+  const modulesDb = require('../src/db/modules');
+  const fs = require('node:fs');
+  const path = require('node:path');
+
+  const name = `audit-${Date.now()}.pdf`;
+  const filePath = path.join(process.cwd(), 'data', 'uploads', name);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, Buffer.from('%PDF-1.4\n%%EOF\n'));
+
+  const draft = modulesDb.createModule(db, { title: 'Draft file module', status: 'draft' });
+  modulesDb.addItem(db, {
+    moduleId: draft.id,
+    type: 'file',
+    title: 'Handout',
+    filePath: 'uploads/' + name,
+    fileName: 'handout "quoted" name.pdf',
+    fileSize: 16,
+  });
+
+  const asAdmin = await request(app).get(`/files/${name}`).set('Cookie', adminAuth.cookie);
+  assert.equal(asAdmin.status, 200, 'admins can preview files of unpublished modules');
+  assert.match(asAdmin.headers['content-disposition'], /filename\*=UTF-8''/);
+
+  const asStudent = await request(app).get(`/files/${name}`).set('Cookie', studentAuth.cookie);
+  assert.equal(asStudent.status, 403);
+
+  fs.rmSync(filePath, { force: true });
+});
+
+test('rejected uploads show a message instead of a 500 page', async () => {
+  const { app, db, adminAuth } = setupRoles();
+  const seed = seedContent(db);
+
+  const moduleUpload = await request(app)
+    .post(`/admin/modules/${seed.moduleId}/items/upload`)
+    .set('Cookie', adminAuth.cookie)
+    .field('_csrf', adminAuth.csrfToken)
+    .attach('file', Buffer.from('hello'), { filename: 'notes.txt', contentType: 'text/plain' });
+  assert.equal(moduleUpload.status, 303, moduleUpload.text);
+  assert.match(moduleUpload.headers.location, /error=upload_failed$/);
+
+  const avatar = await request(app)
+    .post('/settings/profile/photo')
+    .set('Cookie', adminAuth.cookie)
+    .field('_csrf', adminAuth.csrfToken)
+    .attach('avatar', Buffer.from('hello'), { filename: 'notes.txt', contentType: 'text/plain' });
+  assert.equal(avatar.status, 303, avatar.text);
+  assert.equal(avatar.headers.location, '/settings/profile');
+});
+
+test('admin actions leave a visible confirmation across the redirect', async () => {
+  const { app, db, adminAuth } = setupRoles();
+  const student = createUser(db, { email: 'flash.student@example.test', username: 'flashstudent' });
+
+  const post = await request(app)
+    .post(`/admin/users/${student.id}/disable`)
+    .set('Cookie', adminAuth.cookie)
+    .type('form')
+    .send({ _csrf: adminAuth.csrfToken, _confirm: '1' });
+  assert.equal(post.status, 303, post.text);
+
+  const flashCookie = (post.headers['set-cookie'] || [])
+    .map((cookie) => cookie.split(';')[0])
+    .find((cookie) => cookie.startsWith('cybersafe.flash='));
+  assert.ok(flashCookie, 'the message travels in a short-lived cookie');
+
+  const page = await request(app)
+    .get('/admin/users')
+    .set('Cookie', `${adminAuth.cookie}; ${flashCookie}`);
+  assert.match(page.text, /disabled\./, 'the confirmation is rendered');
+
+  const clearing = (page.headers['set-cookie'] || [])
+    .map((cookie) => cookie.split(';')[0])
+    .filter((cookie) => cookie.startsWith('cybersafe.flash='));
+  assert.ok(clearing.some((cookie) => cookie.endsWith('cybersafe.flash=')), 'the cookie is cleared after use');
+});

@@ -2102,3 +2102,6 @@ html.text-large { font-size: 1.15rem; }
 .option-row input:checked + .option-letter {
   background: var(--accent-cyan); border-color: var(--accent-cyan); color: #04222a;
 }
+
+/* Inline action forms (user management row actions) */
+.form-inline { display: inline; }

@@ -240,12 +240,54 @@ const FLASH_MESSAGES = {
 
 const FLASH_CODES = Object.keys(FLASH_MESSAGES);
 
+const FLASH_COOKIE = 'cybersafe.flash';
+const FLASH_TYPES = new Set(['success', 'error', 'warning', 'info']);
+
+/** @param {string} header raw Cookie header */
+function parseCookieHeader(header) {
+  const out = {};
+  if (!header) return out;
+  for (const part of String(header).split(';')) {
+    const index = part.indexOf('=');
+    if (index === -1) continue;
+    const name = part.slice(0, index).trim();
+    if (!name) continue;
+    try {
+      out[name] = decodeURIComponent(part.slice(index + 1).trim());
+    } catch {
+      out[name] = part.slice(index + 1).trim();
+    }
+  }
+  return out;
+}
+
+/**
+ * Messages an earlier request parked in the flash cookie. The session object is
+ * a read-only database row, so `req.session.flash` never persisted; a short
+ * lived cookie carries those messages across one redirect instead.
+ * @param {import('express').Request} req
+ */
+function readFlashCookie(req) {
+  const raw = parseCookieHeader(req && req.headers ? req.headers.cookie : '')[FLASH_COOKIE];
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item) => item && typeof item.message === 'string' && FLASH_TYPES.has(item.type))
+      .slice(0, 3)
+      .map((item) => ({ type: item.type, message: item.message }));
+  } catch {
+    return [];
+  }
+}
+
 /**
  * @param {import('express').Request} req
  * @returns {Array<{type: string, message: string}>}
  */
 function readFlash(req) {
-  const messages = [];
+  const messages = readFlashCookie(req);
   for (const parameter of ['notice', 'error']) {
     const code = req.query && req.query[parameter];
     if (typeof code === 'string' && FLASH_MESSAGES[code]) {
@@ -255,4 +297,4 @@ function readFlash(req) {
   return messages;
 }
 
-module.exports = { FLASH_MESSAGES, FLASH_CODES, readFlash };
+module.exports = { FLASH_MESSAGES, FLASH_CODES, FLASH_COOKIE, readFlash, readFlashCookie };

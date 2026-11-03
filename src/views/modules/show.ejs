@@ -76,7 +76,7 @@
           </header>
           <div class="content-card-body">
             <% if (item.type === 'page') { %>
-              <div class="module-page-content"><%- item.content %></div>
+              <div class="module-page-content"><%- item.renderedContent || "" %></div>
             <% } else if (item.type === 'link') { %>
               <a href="<%= item.url %>" target="_blank" rel="noopener noreferrer" class="link-arrow">Open link →</a>
             <% } else if (item.type === 'file') { %>

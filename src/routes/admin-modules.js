@@ -169,8 +169,19 @@ function createAdminModuleRoutes({ db }) {
     return res.redirect(303, '/admin/modules/' + moduleId + '?notice=item_added');
   });
 
-  // Upload file item
-  router.post('/:id/items/upload', ...guard, upload.single('file'), (req, res) => {
+  // Upload file item. Multer runs before the handler, so wrap it to turn
+  // rejected files into a readable error instead of a 500 page.
+  const uploadItem = (req, res, next) => {
+    upload.single('file')(req, res, (error) => {
+      if (error) {
+        const moduleId = Number(req.params.id);
+        return res.redirect(303, '/admin/modules/' + moduleId + '?error=upload_failed');
+      }
+      return next();
+    });
+  };
+
+  router.post('/:id/items/upload', ...guard, uploadItem, (req, res) => {
     const moduleId = Number(req.params.id);
     // Validate CSRF after multer parses the multipart body.
     if (!csrfOk(req)) {

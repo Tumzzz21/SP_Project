@@ -57,6 +57,10 @@ test('security headers include a restrictive content security policy', async () 
   assert.ok(csp, 'CSP header is required');
   assert.match(csp, /default-src 'self'/);
   assert.match(csp, /frame-ancestors 'none'/);
+  // Scripts stay strict; only inline CSS is allowed (templates use width/margin attrs).
+  assert.match(csp, /script-src 'self'/);
+  assert.doesNotMatch(csp, /script-src[^;]*'unsafe-inline'/);
+  assert.match(csp, /style-src 'self' 'unsafe-inline'/);
   assert.equal(response.headers['x-content-type-options'], 'nosniff');
   assert.ok(response.headers['x-request-id'], 'request id is exposed for support');
 });
