@@ -18,7 +18,7 @@ const CATEGORIES = [
     key: 'scams',
     label: 'Online scams',
     short: 'Scams',
-    description: 'Recognise marketplace, job, scholarship, and romance scams targeting students.',
+    description: 'Recognise marketplace, job, scholarship, and romance scams targeting users.',
   },
   {
     key: 'privacy',

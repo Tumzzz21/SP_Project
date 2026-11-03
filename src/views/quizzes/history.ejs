@@ -1,4 +1,4 @@
-﻿<%- include('../partials/head') %>
+<%- include('../partials/head') %>
 
 <main id="main" class="shell page">
   <%- include('../partials/flash') %>
@@ -89,7 +89,7 @@
               </td>
               <td>
                 <a class="link-arrow" href="/attempts/<%= entry.id %>">
-                  <%= entry.status === 'submitted' ? 'Review' : 'Details' %> <span aria-hidden="true">â†’</span>
+                  <%= entry.status === 'submitted' ? 'Review' : 'Details' %> <span aria-hidden="true">&rarr;</span>
                 </a>
               </td>
             </tr>

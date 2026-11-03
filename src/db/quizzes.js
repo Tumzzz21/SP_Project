@@ -10,6 +10,8 @@
  */
 
 const { AppError } = require('../errors');
+const { validateAnswerKey } = require('../grading');
+const { SLUG_MAX_LENGTH } = require('../validation');
 
 const QUIZ_COLUMNS = `
   id,
@@ -20,6 +22,7 @@ const QUIZ_COLUMNS = `
   status,
   passing_score_percent AS passingScorePercent,
   max_attempts AS maxAttempts,
+  module_id AS moduleId,
   created_at            AS createdAt,
   updated_at            AS updatedAt,
   published_at          AS publishedAt
@@ -38,6 +41,34 @@ function listPublished(db) {
         ORDER BY q.title`,
     )
     .all();
+}
+
+/**
+ * Latest published version of every quiz linked to one module (newest version
+ * per slug wins, so a superseded version never shows up twice).
+ * @param {import('better-sqlite3').Database} db
+ * @param {number} moduleId
+ */
+function listPublishedForModule(db, moduleId) {
+  return db
+    .prepare(
+      `SELECT ${QUIZ_COLUMNS} FROM quizzes q
+        WHERE q.module_id = ?
+          AND q.status = 'published'
+          AND q.version = (
+            SELECT MAX(version) FROM quizzes q2
+             WHERE q2.slug = q.slug AND q2.status = 'published'
+          )
+        ORDER BY q.title`,
+    )
+    .all(moduleId);
+}
+
+/** Quizzes attached to a module, any status (admin views). */
+function listForModule(db, moduleId) {
+  return db
+    .prepare(`SELECT ${QUIZ_COLUMNS} FROM quizzes WHERE module_id = ? ORDER BY slug, version DESC`)
+    .all(moduleId);
 }
 
 /** @param {import('better-sqlite3').Database} db @param {string} slug */
@@ -206,10 +237,38 @@ function findDraftForSlug(db, slug) {
 }
 
 /**
+ * First free slug in the family `base`, `base-2`, `base-3`, ... .
+ *
+ * A slug identifies a version family, so a generated slug must not collide with
+ * an existing quiz: a second "Phishing basics" becomes `phishing-basics-2`
+ * instead of silently minting version 2 of the first one. The base is trimmed
+ * so the suffixed slug still fits the 80-character limit.
+ *
+ * @param {import('better-sqlite3').Database} db
+ * @param {string} base slug that already satisfies SLUG_PATTERN
+ * @returns {string}
+ */
+function generateUniqueSlug(db, base) {
+  const taken = db.prepare('SELECT 1 FROM quizzes WHERE slug = ? LIMIT 1');
+  const stem = base.slice(0, SLUG_MAX_LENGTH).replace(/-+$/g, '');
+  if (!taken.get(stem)) return stem;
+
+  for (let counter = 2; counter < 10000; counter += 1) {
+    const suffix = `-${counter}`;
+    const candidate = `${stem.slice(0, SLUG_MAX_LENGTH - suffix.length).replace(/-+$/g, '')}${suffix}`;
+    if (!taken.get(candidate)) return candidate;
+  }
+
+  throw new AppError(409, 'Could not find a free URL slug for this quiz title.', {
+    code: 'slug_exhausted',
+  });
+}
+
+/**
  * Create the first version of a quiz as a draft (version = 1 for a new slug,
  * or latest+1 when the slug already has versions).
  */
-function createDraft(db, { slug, title, description, passingScorePercent = 70, maxAttempts = null }) {
+function createDraft(db, { slug, title, description, passingScorePercent = 70, maxAttempts = null, moduleId = null }) {
   const latest = findLatestBySlug(db, slug);
   const version = latest ? latest.version + 1 : 1;
   const now = new Date().toISOString();
@@ -217,10 +276,10 @@ function createDraft(db, { slug, title, description, passingScorePercent = 70, m
     const result = db
       .prepare(
         `INSERT INTO quizzes (slug, version, title, description, status,
-                              passing_score_percent, max_attempts, created_at, updated_at, published_at)
-         VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, NULL)`,
+                              passing_score_percent, max_attempts, module_id, created_at, updated_at, published_at)
+         VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, NULL)`,
       )
-      .run(slug, version, title, description, passingScorePercent, maxAttempts, now, now);
+      .run(slug, version, title, description, passingScorePercent, maxAttempts, moduleId, now, now);
     return findById(db, Number(result.lastInsertRowid));
   } catch (error) {
     if (error && error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -228,12 +287,15 @@ function createDraft(db, { slug, title, description, passingScorePercent = 70, m
         code: 'slug_taken',
       });
     }
+    if (error && error.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
+      throw new AppError(400, 'That learning module no longer exists.', { code: 'module_not_found' });
+    }
     throw error;
   }
 }
 
 /** Update metadata of a DRAFT version only. */
-function updateDraft(db, quizId, { title, description, passingScorePercent, maxAttempts }) {
+function updateDraft(db, quizId, { title, description, passingScorePercent, maxAttempts, moduleId = null }) {
   const quiz = findById(db, quizId);
   if (!quiz) return null;
   if (quiz.status !== 'draft') {
@@ -241,11 +303,18 @@ function updateDraft(db, quizId, { title, description, passingScorePercent, maxA
       code: 'quiz_not_editable',
     });
   }
-  db.prepare(
-    `UPDATE quizzes
-        SET title = ?, description = ?, passing_score_percent = ?, max_attempts = ?, updated_at = ?
-      WHERE id = ? AND status = 'draft'`,
-  ).run(title, description, passingScorePercent, maxAttempts, new Date().toISOString(), quizId);
+  try {
+    db.prepare(
+      `UPDATE quizzes
+          SET title = ?, description = ?, passing_score_percent = ?, max_attempts = ?, module_id = ?, updated_at = ?
+        WHERE id = ? AND status = 'draft'`,
+    ).run(title, description, passingScorePercent, maxAttempts, moduleId, new Date().toISOString(), quizId);
+  } catch (error) {
+    if (error && error.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
+      throw new AppError(400, 'That learning module no longer exists.', { code: 'module_not_found' });
+    }
+    throw error;
+  }
   return findById(db, quizId);
 }
 
@@ -321,10 +390,20 @@ function createNewVersion(db, sourceQuizId) {
       db
         .prepare(
           `INSERT INTO quizzes (slug, version, title, description, status,
-                                passing_score_percent, max_attempts, created_at, updated_at, published_at)
-           VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, NULL)`,
+                                passing_score_percent, max_attempts, module_id, created_at, updated_at, published_at)
+           VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, NULL)`,
         )
-        .run(source.slug, version, source.title, source.description, source.passingScorePercent, source.maxAttempts, now, now)
+        .run(
+          source.slug,
+          version,
+          source.title,
+          source.description,
+          source.passingScorePercent,
+          source.maxAttempts,
+          source.moduleId,
+          now,
+          now,
+        )
         .lastInsertRowid,
     );
 
@@ -383,6 +462,116 @@ function archive(db, quizId) {
   return findById(db, quizId);
 }
 
+/** Number of attempts (of any status) pinned to one quiz version. */
+function attemptCount(db, quizId) {
+  return db.prepare('SELECT COUNT(*) AS total FROM quiz_attempts WHERE quiz_id = ?').get(quizId).total;
+}
+
+/**
+ * Restore an archived version to the catalogue.
+ *
+ * A version that was published before returns to `published`; a version that
+ * was archived from a draft returns to `draft`. The original state is inferred
+ * from `published_at`, which is set exactly once when a version is published.
+ *
+ * Restoring to published re-validates the answer key. Restoring to draft is
+ * only allowed when no attempt references the version, because draft content
+ * is editable and must never mutate the questions a student answered.
+ */
+function restore(db, quizId) {
+  const quiz = findById(db, quizId);
+  if (!quiz) return null;
+  if (quiz.status !== 'archived') {
+    throw new AppError(409, 'Only archived quiz versions can be restored.', {
+      code: 'quiz_not_archived',
+    });
+  }
+
+  const targetStatus = quiz.publishedAt ? 'published' : 'draft';
+  if (targetStatus === 'published') {
+    const validation = validateAnswerKey(getAnswerKey(db, quizId));
+    if (!validation.ok) {
+      throw new AppError(
+        409,
+        'This archived version cannot be published again because its question set is incomplete.',
+        { code: 'quiz_restore_invalid' },
+      );
+    }
+  } else if (attemptCount(db, quizId) > 0) {
+    throw new AppError(
+      409,
+      'This archived version has student attempts and cannot be made editable again.',
+      { code: 'quiz_restore_unsafe' },
+    );
+  }
+
+  const updated = db
+    .prepare(
+      `UPDATE quizzes SET status = ?, updated_at = ?
+        WHERE id = ? AND status = 'archived'`,
+    )
+    .run(targetStatus, new Date().toISOString(), quizId);
+  if (updated.changes !== 1) {
+    throw new AppError(409, 'Only archived quiz versions can be restored.', {
+      code: 'quiz_not_archived',
+    });
+  }
+  return findById(db, quizId);
+}
+
+/**
+ * Permanently remove an archived version that no student has attempted.
+ *
+ * Attempts are the reason archived versions exist: they keep old results
+ * explainable. If any attempt row references this quiz version the deletion is
+ * refused, so no attempt or answer can ever be orphaned. The foreign keys also
+ * enforce this at the database layer.
+ *
+ * Questions and options are protected by immutability triggers while the quiz
+ * is archived. The transaction moves the row to draft only after the attempt
+ * check, deletes the frozen content, then removes the quiz row. Any failure
+ * rolls the whole transaction back to the archived state.
+ */
+function deleteArchived(db, quizId) {
+  const quiz = findById(db, quizId);
+  if (!quiz) return null;
+
+  const remove = db.transaction(() => {
+    const current = findById(db, quizId);
+    if (!current) return false;
+    if (current.status !== 'archived') {
+      throw new AppError(409, 'Only archived quiz versions can be deleted.', {
+        code: 'quiz_not_archived',
+      });
+    }
+
+    const attempts = attemptCount(db, quizId);
+    if (attempts > 0) {
+      throw new AppError(
+        409,
+        'This quiz version has student attempts and cannot be deleted. Keep it archived to preserve their history.',
+        { code: 'quiz_has_attempts' },
+      );
+    }
+
+    const now = new Date().toISOString();
+    db.prepare("UPDATE quizzes SET status = 'draft', updated_at = ? WHERE id = ? AND status = 'archived'").run(
+      now,
+      quizId,
+    );
+    db.prepare(
+      `DELETE FROM quiz_options
+        WHERE question_id IN (SELECT id FROM quiz_questions WHERE quiz_id = ?)`,
+    ).run(quizId);
+    db.prepare('DELETE FROM quiz_questions WHERE quiz_id = ?').run(quizId);
+    const removed = db.prepare("DELETE FROM quizzes WHERE id = ? AND status = 'draft'").run(quizId);
+    if (removed.changes !== 1) throw new Error('quiz_delete_failed');
+    return true;
+  });
+
+  return remove();
+}
+
 /** Live published version of a slug, used for version-history display. */
 function findPublishedVersion(db, slug) {
   return findPublishedBySlug(db, slug);
@@ -390,6 +579,8 @@ function findPublishedVersion(db, slug) {
 
 module.exports = {
   listPublished,
+  listPublishedForModule,
+  listForModule,
   findPublishedBySlug,
   findById,
   getPublicQuestions,
@@ -400,11 +591,14 @@ module.exports = {
   listVersions,
   findLatestBySlug,
   findDraftForSlug,
+  generateUniqueSlug,
   createDraft,
   updateDraft,
   replaceDraftQuestions,
   createNewVersion,
   publish,
   archive,
+  restore,
+  deleteArchived,
   findPublishedVersion,
 };

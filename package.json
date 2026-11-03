@@ -16,6 +16,7 @@
     "seed:demo": "node scripts/seed-demo.js",
     "create-admin": "node scripts/promote-admin.js",
     "setup-test-accounts": "node scripts/setup-test-accounts.js",
+    "check:encoding": "node scripts/check-encoding.js",
     "test": "node --test \"tests/**/*.test.js\"",
     "lint": "eslint src scripts tests"
   },

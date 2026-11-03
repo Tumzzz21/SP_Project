@@ -1,0 +1,15 @@
+# Normalise text files to UTF-8/LF in the repository, but keep Windows batch
+# helpers on CRLF so cmd.exe renders them correctly.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets must never be line-ending converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
+*.docx binary
+*.pptx binary

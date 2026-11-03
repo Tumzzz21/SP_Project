@@ -86,7 +86,6 @@ test('static assets are served from the public directory', async () => {
   }
 });
 
-test('lesson content is escaped before it is rendered', async () => {
 test('the account page shows profile data but never the Google subject id', async () => {
   const { app, db, config } = createContext();
   const user = createUser(db, { email: 'profile@example.test', username: 'profile1' });
@@ -122,7 +121,7 @@ test('the admin shell renders without template errors', async () => {
   const response = await request(app).get('/admin').set('Cookie', auth.cookie);
   assert.equal(response.status, 200);
   assert.match(response.text, /Admin overview/);
-  assert.match(response.text, /ACTIVE STUDENTS/);
+  assert.match(response.text, /ACTIVE USERS/);
   assert.match(response.text, /PUBLISHED MODULES/);
   assert.match(response.text, /PUBLISHED QUIZZES/);
   assert.match(response.text, /AVERAGE SCORE/);
@@ -142,4 +141,37 @@ test('a pending account sees the setup page and nothing else', async () => {
   assert.equal(dashboard.headers.location, '/setup');
 });
 
+test('safety tips are public and linked from every navigation', async () => {
+  const { app, db, config } = createContext();
+
+  // Guests can read the page, and it marks itself as the current nav item.
+  const guestTips = await request(app).get('/safety-tips');
+  assert.equal(guestTips.status, 200);
+  assert.match(guestTips.text, /Safety tips/);
+  assert.match(guestTips.text, /Spot phishing before you click/);
+  assert.match(guestTips.text, /href="\/safety-tips"[^>]*aria-current=(?:"page"|&#34;page&#34;)/);
+  assert.match(guestTips.text, /Sign in to practise/);
+
+  // The sign-in page links to it for people who have no account.
+  const loginPage = await request(app).get('/login');
+  assert.equal(loginPage.status, 200);
+  assert.match(loginPage.text, /href="\/safety-tips"/);
+
+  // Students see it in the app navigation.
+  const student = createUser(db, {});
+  const studentAuth = login(db, config, student);
+  const dashboard = await request(app).get('/dashboard').set('Cookie', studentAuth.cookie);
+  assert.match(dashboard.text, /href="\/safety-tips"[^>]*>Safety Tips</);
+
+  // Admins see it too, after the existing admin links.
+  const admin = createUser(db, { email: 'boss@example.test', username: 'boss1', role: 'admin' });
+  const adminAuth = login(db, config, admin);
+  const adminHome = await request(app).get('/admin').set('Cookie', adminAuth.cookie);
+  assert.match(adminHome.text, /href="\/safety-tips"[^>]*>Safety Tips</);
+
+  // Signed-in readers get practice actions instead of the sign-in prompt.
+  const signedIn = await request(app).get('/safety-tips').set('Cookie', studentAuth.cookie);
+  assert.equal(signedIn.status, 200);
+  assert.match(signedIn.text, /Take a quiz/);
+  assert.doesNotMatch(signedIn.text, /Sign in to practise/);
 });

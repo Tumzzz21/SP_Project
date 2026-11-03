@@ -53,31 +53,15 @@
       <p class="muted"><%= attempt.status === 'submitted' ? 'This attempt has no stored answers.' : 'Answers are stored only when an attempt is submitted before it expires.' %></p>
     </div>
   <% } else { %>
-    <ol class="review-list section-tight">
+    <section class="section-tight">
+      <div class="section-head">
+        <h2>Review and explanations</h2>
+        <p class="muted">The student's selection is shown first, then the correct answer and why it is correct.</p>
+      </div>
       <% answers.forEach(function (answer, i) { %>
-        <li class="review-card">
-          <div class="review-head">
-            <p class="question-prompt"><span class="question-number"><%= i + 1 %></span> <%= answer.prompt %></p>
-            <span class="badge <%= answer.isCorrect === null ? 'badge-warning' : (answer.isCorrect ? 'badge-success' : 'badge-danger') %>">
-              <%= answer.isCorrect === null ? 'unanswered' : (answer.isCorrect ? 'correct' : 'incorrect') %>
-            </span>
-          </div>
-          <dl class="answer-compare">
-            <div>
-              <dt>Selected answer</dt>
-              <dd><%= answer.selectedLabel || '— (no answer selected)' %></dd>
-            </div>
-            <div>
-              <dt>Correct answer</dt>
-              <dd><%= answer.correctLabel || '—' %></dd>
-            </div>
-          </dl>
-          <% if (answer.explanation) { %>
-            <p class="explanation">Why: <%= answer.explanation %></p>
-          <% } %>
-        </li>
+        <%- include('../../partials/answer-review', { answer: answer, index: i }) %>
       <% }); %>
-    </ol>
+    </section>
   <% } %>
   <% if (attempt.status === 'submitted') { %>
     <section class="panel" style="margin-top:1rem;">

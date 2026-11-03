@@ -88,6 +88,10 @@ const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const SLUG_HELP = 'Use lowercase letters, numbers, and hyphens (for example: spotting-phishing).';
 
+const SLUG_MIN_LENGTH = 3;
+const SLUG_MAX_LENGTH = 80;
+const SLUG_FALLBACK = 'quiz';
+
 /** @param {unknown} value */
 function normaliseSlug(value) {
   return String(value ?? '')
@@ -96,6 +100,22 @@ function normaliseSlug(value) {
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
     .replace(/-{2,}/g, '-');
+}
+
+/**
+ * Derive a URL slug from arbitrary text (a quiz title, for example).
+ * Spaces and punctuation collapse to single hyphens, and the result always
+ * satisfies SLUG_PATTERN so it can be inserted without further validation.
+ *
+ * @param {unknown} value
+ * @returns {string} 3-80 character slug
+ */
+function slugify(value) {
+  const base = normaliseSlug(value).replace(/^-+|-+$/g, '').slice(0, SLUG_MAX_LENGTH).replace(/-+$/g, '');
+  if (!base) return SLUG_FALLBACK;
+  // Titles such as "C++" reduce to a one-character stem; pad it into a valid slug.
+  if (base.length < SLUG_MIN_LENGTH) return `${SLUG_FALLBACK}-${base}`;
+  return base;
 }
 
 /**
@@ -140,25 +160,29 @@ function validateLessonInput(input, { categoryKeys } = {}) {
 }
 
 /**
- * Quiz metadata form (title, description, passing score, slug for new quizzes).
+ * Quiz metadata form (title, description, passing score, attempt limit).
+ * The URL slug is not user input: `slugify` derives it from the title on
+ * creation, and it is frozen afterwards. A quiz may optionally belong to one
+ * learning module, which is how it appears on that module's page.
+ *
  * @param {unknown} input
+ * @param {{moduleIds?: number[]}} [options] modules the quiz may be attached to
  * @returns {{values: object, errors: Record<string,string>}}
  */
-function validateQuizInput(input, { requireSlug = true } = {}) {
+function validateQuizInput(input, { moduleIds = [] } = {}) {
   const title = normaliseWhitespace(input.title);
-  const slug = normaliseSlug(input.slug);
   const description = String(input.description ?? '').replace(/\s+/g, ' ').trim();
   const passRaw = String(input.passingScorePercent ?? '').trim();
   const attemptsRaw = String(input.maxAttempts ?? '').trim();
+  const moduleRaw = String(input.module_id ?? '').trim();
+  const moduleId = /^\d+$/.test(moduleRaw) ? Number.parseInt(moduleRaw, 10) : null;
   const errors = {};
 
   if (!title) errors.title = 'Enter a quiz title.';
   else if (title.length < 3 || title.length > 120) errors.title = 'Title must be 3-120 characters.';
 
-  if (requireSlug) {
-    if (!slug) errors.slug = 'Enter a URL slug.';
-    else if (slug.length < 3 || slug.length > 80) errors.slug = 'Slug must be 3-80 characters.';
-    else if (!SLUG_PATTERN.test(slug)) errors.slug = SLUG_HELP;
+  if (moduleRaw !== '' && (moduleId === null || !moduleIds.includes(moduleId))) {
+    errors.moduleId = 'Choose a valid learning module, or leave this blank.';
   }
 
   if (description.length > 300) errors.description = 'Description must be 300 characters or fewer.';
@@ -174,7 +198,7 @@ function validateQuizInput(input, { requireSlug = true } = {}) {
   }
 
   return {
-    values: { title, slug, description, passingScorePercent, maxAttempts },
+    values: { title, description, passingScorePercent, maxAttempts, moduleId },
     errors,
   };
 }
@@ -334,12 +358,56 @@ function parseIdParam(raw) {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+/**
+ * Redirect target for "return to where the form was submitted" flows.
+ *
+ * Only same-origin absolute paths are accepted, so a crafted `returnTo` cannot
+ * turn a POST into an open redirect. Anything suspicious (scheme-relative
+ * `//host`, backslashes, control characters, dot segments, encoded dots, or an
+ * unreasonably long value) falls back to the caller's default path.
+ *
+ * @param {unknown} raw submitted value
+ * @param {string} fallback local path used when the value is not trusted
+ * @returns {string}
+ */
+function safeReturnPath(raw, fallback = '/') {
+  if (typeof raw !== 'string') return fallback;
+  const value = raw.trim();
+  if (!value || value.length > 512) return fallback;
+  if (value[0] !== '/' || value.startsWith('//')) return fallback;
+  if (value.includes('\\')) return fallback;
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f]/.test(value)) return fallback;
+
+  const path = value.split(/[?#]/)[0];
+  if (/%2e|\.\./i.test(path)) return fallback;
+  if (path.split('/').some((segment) => segment === '.')) return fallback;
+
+  return value;
+}
+
+/**
+ * Append a `?notice=` (or `&notice=`) parameter, keeping any fragment last.
+ * @param {string} target local path, optionally with query and fragment
+ * @param {string} notice flash code
+ * @returns {string}
+ */
+function withNotice(target, notice) {
+  const hashIndex = target.indexOf('#');
+  const path = hashIndex === -1 ? target : target.slice(0, hashIndex);
+  const hash = hashIndex === -1 ? '' : target.slice(hashIndex);
+  const separator = path.includes('?') ? '&' : '?';
+  return `${path}${separator}notice=${notice}${hash}`;
+}
+
 module.exports = {
   RESERVED_USERNAMES,
   USERNAME_PATTERN,
   SLUG_PATTERN,
+  SLUG_MAX_LENGTH,
   normaliseWhitespace,
   normaliseSlug,
+  slugify,
   validateSetupInput,
   validateDisplayName,
   validateLoginInput,
@@ -349,5 +417,7 @@ module.exports = {
   validateQuizInput,
   parseQuestionForm,
   parseIdParam,
+  safeReturnPath,
+  withNotice,
   assert,
 };

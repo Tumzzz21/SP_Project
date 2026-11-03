@@ -6,6 +6,7 @@ const fs = require('fs');
 const { requireActive } = require('../auth/guards');
 const { readFlash } = require('../flash');
 const modulesDb = require('../db/modules');
+const quizzesDb = require('../db/quizzes');
 
 function createModuleRoutes({ db }) {
   const router = express.Router();
@@ -18,6 +19,7 @@ function createModuleRoutes({ db }) {
     const withProgress = mods.map(m => ({
       ...m,
       items: modulesDb.moduleProgress(db, req.user.id, m.id),
+      quizzes: quizzesDb.listPublishedForModule(db, m.id),
       progress: modulesDb.progressForModule(db, req.user.id, m.id),
     }));
     res.render('modules/index', {
@@ -53,6 +55,7 @@ function createModuleRoutes({ db }) {
       module: mod,
       items,
       progress,
+      quizzes: quizzesDb.listPublishedForModule(db, id),
       flash: readFlash(req),
     });
   });

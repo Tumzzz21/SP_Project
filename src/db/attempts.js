@@ -121,15 +121,32 @@ function statsForQuiz(db, userId, quizId) {
   const row = db
     .prepare(
       `SELECT COUNT(*) AS total,
+              SUM(CASE WHEN status = 'submitted' THEN 1 ELSE 0 END) AS completed,
               MAX(CASE WHEN status = 'submitted' THEN score_points * 1.0 / NULLIF(max_points, 0) END) AS bestRatio,
               MAX(CASE WHEN status = 'submitted' THEN submitted_at END) AS lastSubmittedAt
          FROM quiz_attempts
         WHERE user_id = ? AND quiz_id = ?`,
     )
     .get(userId, quizId);
+
+  // Keep the raw best score so the catalogue can show "Best 7/8" without
+  // reconstructing the fraction from a rounded percentage.
+  const best = db
+    .prepare(
+      `SELECT score_points AS scorePoints, max_points AS maxPoints
+         FROM quiz_attempts
+        WHERE user_id = ? AND quiz_id = ? AND status = 'submitted'
+        ORDER BY score_points * 1.0 / NULLIF(max_points, 0) DESC, submitted_at DESC
+        LIMIT 1`,
+    )
+    .get(userId, quizId);
+
   return {
     total: row.total,
+    completed: row.completed || 0,
     bestRatio: row.bestRatio === null ? null : Number(row.bestRatio),
+    bestScorePoints: best ? best.scorePoints : null,
+    bestMaxPoints: best ? best.maxPoints : null,
     lastSubmittedAt: row.lastSubmittedAt || null,
   };
 }

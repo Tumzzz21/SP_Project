@@ -32,7 +32,8 @@
 
       <nav class="primary-nav" id="primary-nav" aria-label="Primary">
         <% if (!user) { %>
-                  <a class="nav-cta" href="/login">Sign in</a>
+          <a href="/safety-tips" class="<%= activeNav === 'safety' ? 'is-active' : '' %>"<%= activeNav === 'safety' ? ' aria-current="page"' : '' %>>Safety Tips</a>
+          <a class="nav-cta" href="/login">Sign in</a>
         <% } else { %>
           <% if (user.role === 'admin') { %>
             <a href="/admin" class="<%= activeNav === 'admin' ? 'is-active' : '' %>"<%= activeNav === 'admin' ? ' aria-current="page"' : '' %>>Admin</a>
@@ -40,10 +41,12 @@
             <a href="/dashboard" class="<%= activeNav === 'dashboard' ? 'is-active' : '' %>"<%= activeNav === 'dashboard' ? ' aria-current="page"' : '' %>>Dashboard</a>
             <a href="/modules" class="<%= activeNav === 'modules' ? 'is-active' : '' %>"<%= activeNav === 'modules' ? 'aria-current="page"' : '' %>>Modules</a>
             <a href="/quizzes" class="<%= activeNav === 'quizzes' ? 'is-active' : '' %>"<%= activeNav === 'quizzes' ? ' aria-current="page"' : '' %>>Quizzes</a>
+            <a href="/safety-tips" class="<%= activeNav === 'safety' ? 'is-active' : '' %>"<%= activeNav === 'safety' ? ' aria-current="page"' : '' %>>Safety Tips</a>
           <% } else { %>
             <a href="/dashboard" class="<%= activeNav === 'dashboard' ? 'is-active' : '' %>"<%= activeNav === 'dashboard' ? ' aria-current="page"' : '' %>>Dashboard</a>
             <a href="/modules" class="<%= activeNav === 'modules' ? 'is-active' : '' %>"<%= activeNav === 'modules' ? ' aria-current="page"' : '' %>>Modules</a>
             <a href="/quizzes" class="<%= activeNav === 'quizzes' ? 'is-active' : '' %>"<%= activeNav === 'quizzes' ? ' aria-current="page"' : '' %>>Quizzes</a>
+            <a href="/safety-tips" class="<%= activeNav === 'safety' ? 'is-active' : '' %>"<%= activeNav === 'safety' ? ' aria-current="page"' : '' %>>Safety Tips</a>
           <% } %>
           <%
             const avatarName = String(user.displayName || user.username || user.email || '').trim();
