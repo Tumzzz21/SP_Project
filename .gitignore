@@ -33,3 +33,8 @@ countq.js
 inspect-schema.js
 list-testdata.js
 cleanup.js
+
+# Portable demo runtime (USB stick only, never committed)
+/runtime/
+/tools/
+
