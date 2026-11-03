@@ -88,7 +88,7 @@ function createAdminModuleRoutes({ db }) {
 
       const mod = modulesDb.createModule(db, { title, description, status, requireSequential });
       const file = req.file;
-      if (!file) return res.redirect(303, '/admin/modules?notice=module_created');
+      if (!file) return res.redirect(303, '/modules?notice=module_created');
 
       const magic = magicBytes[file.mimetype];
       if (!magic || !magic(file.buffer)) {
@@ -106,7 +106,7 @@ function createAdminModuleRoutes({ db }) {
         fileSize: file.size,
         sortOrder: 0,
       });
-      return res.redirect(303, '/admin/modules?notice=module_created_with_file');
+      return res.redirect(303, '/modules?notice=module_created_with_file');
     });
   });
 
@@ -147,7 +147,7 @@ function createAdminModuleRoutes({ db }) {
       }
     }
     modulesDb.deleteModule(db, id);
-    return res.redirect(303, '/admin/modules?notice=deleted');
+    return res.redirect(303, '/modules?notice=deleted');
   });
   // Add item
   router.post('/:id/items', ...guard, (req, res) => {

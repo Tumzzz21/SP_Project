@@ -1148,7 +1148,7 @@ test('a module can be created with its first handout in one submit', async () =>
     .attach('file', pdf, { filename: 'phishing.pdf', contentType: 'application/pdf' });
 
   assert.equal(response.status, 303, response.text);
-  assert.equal(response.headers.location, '/admin/modules?notice=module_created_with_file');
+  assert.equal(response.headers.location, '/modules?notice=module_created_with_file');
 
   // The admin lands back on the module list, so find the row by title.
   const mod = db.prepare('SELECT * FROM modules WHERE title = ?').get('Phishing awareness');
@@ -1158,7 +1158,7 @@ test('a module can be created with its first handout in one submit', async () =>
 
   // The list confirms the creation and shows the new module.
   const listPage = await request(app)
-    .get('/admin/modules?notice=module_created_with_file')
+    .get('/modules?notice=module_created_with_file')
     .set('Cookie', adminAuth.cookie);
   assert.match(listPage.text, /first handout attached/);
   assert.match(listPage.text, /Phishing awareness/);
