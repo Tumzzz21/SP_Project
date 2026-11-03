@@ -28,7 +28,13 @@ function errorHandler({ logger = console } = {}) {
     if (res.headersSent) return next(err);
 
     const isAppError = err instanceof AppError;
-    const status = isAppError ? err.statusCode : 500;
+    // Honour an explicit status on plain Errors too: a route that sets
+    // `err.statusCode = 404` should render a 404 page, not a 500.
+    const explicitStatus = Number(err && (err.statusCode || err.status));
+    const status =
+      Number.isInteger(explicitStatus) && explicitStatus >= 400 && explicitStatus <= 599
+        ? explicitStatus
+        : 500;
     const requestId = req.id || 'unknown';
 
     if (status >= 500) {

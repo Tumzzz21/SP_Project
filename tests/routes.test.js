@@ -175,3 +175,29 @@ test('safety tips are public and linked from every navigation', async () => {
   assert.match(signedIn.text, /Take a quiz/);
   assert.doesNotMatch(signedIn.text, /Sign in to practise/);
 });
+
+test('the error handler honours an explicit status on plain errors', async () => {
+  const { errorHandler } = require('../src/middleware/errors');
+
+  const err = Object.assign(new Error('not here'), { statusCode: 404 });
+  let responseStatus = null;
+  let locals = null;
+  const res = {
+    headersSent: false,
+    status(code) { responseStatus = code; return this; },
+    render(view, data) { locals = data; return this; },
+  };
+  const req = {
+    id: 'test-request',
+    method: 'GET',
+    originalUrl: '/modules/123',
+    path: '/modules/123',
+    query: {},
+    accepts: () => 'html',
+    get: () => '',
+  };
+
+  errorHandler({ logger: { error() {} } })(err, req, res, () => {});
+  assert.equal(responseStatus, 404);
+  assert.equal(locals.status, 404);
+});

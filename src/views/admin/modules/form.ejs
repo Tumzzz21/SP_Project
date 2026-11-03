@@ -23,7 +23,7 @@
     </div>
     <% if (module) { %>
       <div class="page-head-actions">
-        <a class="btn btn-secondary btn-sm" href="/modules/<%= module.id %>">View as student</a>
+        <a class="btn btn-secondary btn-sm" href="/modules/<%= module.id %>"><%= module.status === 'published' ? 'View as student' : 'Preview module' %></a>
       </div>
     <% } %>
   </header>

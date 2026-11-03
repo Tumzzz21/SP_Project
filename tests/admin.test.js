@@ -1203,3 +1203,24 @@ test('module form errors stay visible after the redirect', async () => {
   assert.equal(page.status, 200);
   assert.match(page.text, /Enter a module title/);
 });
+
+test('a draft module previews for admins but is not found for students', async () => {
+  const { app, db, adminAuth, studentAuth } = setupRoles();
+  const modulesDb = require('../src/db/modules');
+  const draft = modulesDb.createModule(db, { title: 'Draft preview module', description: '', status: 'draft' });
+
+  // Students get a 404 page; this used to surface as a 500.
+  const asStudent = await request(app).get(`/modules/${draft.id}`).set('Cookie', studentAuth.cookie);
+  assert.equal(asStudent.status, 404);
+  assert.match(asStudent.text, /not found/i);
+  assert.doesNotMatch(asStudent.text, /Something went wrong/);
+
+  // Admins can open it, clearly marked as a preview.
+  const asAdmin = await request(app).get(`/modules/${draft.id}`).set('Cookie', adminAuth.cookie);
+  assert.equal(asAdmin.status, 200);
+  assert.match(asAdmin.text, /Draft preview/);
+  assert.match(asAdmin.text, /Draft preview module/);
+
+  const missing = await request(app).get('/modules/99999').set('Cookie', adminAuth.cookie);
+  assert.equal(missing.status, 404);
+});

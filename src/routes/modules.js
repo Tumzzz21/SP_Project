@@ -4,6 +4,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { requireActive } = require('../auth/guards');
+const { AppError } = require('../errors');
 const { readFlash } = require('../flash');
 const modulesDb = require('../db/modules');
 const quizzesDb = require('../db/quizzes');
@@ -32,15 +33,16 @@ function createModuleRoutes({ db }) {
     });
   });
 
-  // View a module
+  // View a module. Admins may preview drafts/hidden modules; students only see
+  // published ones (a draft link should read "not found", never a 500).
   router.get('/modules/:id', requireActive, (req, res, next) => {
     const id = Number(req.params.id);
     const mod = modulesDb.findById(db, id);
-    if (!mod || mod.status !== 'published') {
-      const err = new Error('Module not found.');
-      err.statusCode = 404;
-      return next(err);
+    const isAdmin = Boolean(req.user && req.user.role === 'admin');
+    if (!mod || (mod.status !== 'published' && !isAdmin)) {
+      return next(new AppError(404, 'That module was not found.', { code: 'module_not_found' }));
     }
+    const isPreview = mod.status !== 'published';
     const items = modulesDb.moduleProgress(db, req.user.id, id);
     const progress = modulesDb.progressForModule(db, req.user.id, id);
     // Sequential lock: check if previous items are complete
@@ -55,6 +57,7 @@ function createModuleRoutes({ db }) {
       module: mod,
       items,
       progress,
+      preview: isPreview,
       quizzes: quizzesDb.listPublishedForModule(db, id),
       flash: readFlash(req),
     });

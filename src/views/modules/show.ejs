@@ -3,6 +3,12 @@
 <main id="main" class="shell page">
   <%- include('../partials/flash') %>
 
+  <% if (typeof preview !== 'undefined' && preview) { %>
+    <div class="notice notice-warning" role="status">
+      <strong>Draft preview.</strong> Students cannot open this module until you set its status to Published.
+    </div>
+  <% } %>
+
   <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="/modules">Modules</a>
     <span aria-hidden="true">/</span>
@@ -23,6 +29,16 @@
     </div>
   </header>
 
+  <% if (!items || items.length === 0) { %>
+    <div class="empty-state">
+      <h2>No content yet</h2>
+      <p class="muted">
+        <%= (typeof preview !== 'undefined' && preview)
+          ? 'This module is still a draft and has no items. Add a file or page, then publish it.'
+          : 'This module has no items yet. Check back soon.' %>
+      </p>
+    </div>
+  <% } else { %>
   <div class="module-layout">
     <aside class="module-sidebar" aria-label="Module contents">
       <h2 class="module-sidebar-title">Contents</h2>
@@ -86,6 +102,7 @@
       <% }); %>
     </section>
   </div>
+  <% } %>
 
   <% if (quizzes && quizzes.length > 0) { %>
     <section class="module-quizzes" aria-labelledby="module-quizzes-title">
