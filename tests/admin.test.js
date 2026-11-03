@@ -1132,3 +1132,66 @@ test('question saving drops empty option slots and the preview letters them A-D'
   assert.doesNotMatch(preview.text, /option-marker/, 'old bullet markup is gone');
   assert.doesNotMatch(preview.text, /class="question-list"/, 'no double numbering list');
 });
+
+test('a module can be created with its first handout in one submit', async () => {
+  const { app, db, adminAuth } = setupRoles();
+  const pdf = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
+
+  const response = await request(app)
+    .post('/admin/modules')
+    .set('Cookie', adminAuth.cookie)
+    .field('_csrf', adminAuth.csrfToken)
+    .field('title', 'Phishing awareness')
+    .field('description', 'One handout to start with.')
+    .field('status', 'published')
+    .field('item_title', 'Phishing handout')
+    .attach('file', pdf, { filename: 'phishing.pdf', contentType: 'application/pdf' });
+
+  assert.equal(response.status, 303, response.text);
+  assert.match(response.headers.location, /notice=file_uploaded$/);
+  const moduleId = Number(/\/admin\/modules\/(\d+)/.exec(response.headers.location)[1]);
+
+  const mod = db.prepare('SELECT * FROM modules WHERE id = ?').get(moduleId);
+  assert.equal(mod.title, 'Phishing awareness');
+  assert.equal(mod.status, 'published', 'status chosen in the form is applied');
+
+  const item = db.prepare('SELECT * FROM module_items WHERE module_id = ?').get(moduleId);
+  assert.equal(item.type, 'file');
+  assert.equal(item.title, 'Phishing handout');
+  assert.equal(item.file_name, 'phishing.pdf');
+
+  const fs = require('node:fs');
+  const path = require('node:path');
+  fs.rmSync(path.join(process.cwd(), 'data', item.file_path), { force: true });
+
+  // The new-module page already offers the upload fields.
+  const newPage = await request(app).get('/admin/modules/new').set('Cookie', adminAuth.cookie);
+  assert.match(newPage.text, /enctype="multipart\/form-data"/);
+  assert.match(newPage.text, /name="item_title"/);
+  assert.match(newPage.text, /name="file"/);
+
+  // The edit page has one status control and a clearly separated delete action.
+  const editPage = await request(app).get(`/admin/modules/${moduleId}`).set('Cookie', adminAuth.cookie);
+  assert.match(editPage.text, /name="status"/);
+  assert.doesNotMatch(editPage.text, /action="\/admin\/modules\/\d+\/publish"/, 'no duplicate publish button');
+  assert.doesNotMatch(editPage.text, /action="\/admin\/modules\/\d+\/hide"/, 'no duplicate hide button');
+  assert.match(editPage.text, /action="\/admin\/modules\/\d+\/delete"/);
+});
+
+test('module form errors stay visible after the redirect', async () => {
+  const { app, adminAuth } = setupRoles();
+
+  const post = await request(app)
+    .post('/admin/modules')
+    .set('Cookie', adminAuth.cookie)
+    .field('_csrf', adminAuth.csrfToken)
+    .field('title', '')
+    .field('status', 'draft');
+  assert.equal(post.status, 303);
+  assert.match(post.headers.location, /error=module_title_required$/);
+
+  // The browser follows the redirect, so the message is on that URL.
+  const page = await request(app).get(post.headers.location).set('Cookie', adminAuth.cookie);
+  assert.equal(page.status, 200);
+  assert.match(page.text, /Enter a module title/);
+});

@@ -39,6 +39,13 @@ function createAdminModuleRoutes({ db }) {
     'image/jpeg': (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
   };
 
+  const csrfModule = require('../middleware/csrf');
+
+  /** Multipart forms are parsed after the global CSRF middleware, so the
+   *  create/upload handlers verify the token themselves once the body exists. */
+  const csrfOk = (req) =>
+    csrfModule.safeEqual(req.session ? req.session.csrfToken : '', (req.body && req.body._csrf) || '');
+
   router.get('/', ...guard, (req, res) => {
     res.render('admin/modules/index', {
       pageTitle: 'Modules | CyberSafe',
@@ -59,18 +66,48 @@ function createAdminModuleRoutes({ db }) {
     });
   });
 
+  // Create a module, optionally with its first file attached in the same
+  // submit (multipart), so "new module" can produce a ready-to-read module in
+  // one step instead of create-then-upload.
   router.post('/', ...guard, (req, res) => {
-    const title = String(req.body.title || '').trim();
-    const description = String(req.body.description || '').trim();
-    const status = req.body.status === 'published' ? 'published' : 'draft';
-    const requireSequential = req.body.require_sequential === '1';
-    if (!title) {
-      req.session.flash = req.session.flash || [];
-      req.session.flash.push({ type: 'error', message: 'Title is required.' });
-      return res.redirect(303, '/admin/modules/new');
-    }
-    const mod = modulesDb.createModule(db, { title, description, status, requireSequential });
-    return res.redirect(303, '/admin/modules/' + mod.id);
+    upload.single('file')(req, res, (uploadError) => {
+      if (uploadError) {
+        return res.redirect(303, '/admin/modules/new?error=upload_failed');
+      }
+      if (!csrfOk(req)) {
+        return res.redirect(303, '/admin/modules/new?error=csrf_expired');
+      }
+
+      const title = String(req.body.title || '').trim();
+      const description = String(req.body.description || '').trim();
+      const status = req.body.status === 'published' ? 'published' : (req.body.status === 'hidden' ? 'hidden' : 'draft');
+      const requireSequential = req.body.require_sequential === '1';
+      if (!title) {
+        return res.redirect(303, '/admin/modules/new?error=module_title_required');
+      }
+
+      const mod = modulesDb.createModule(db, { title, description, status, requireSequential });
+      const file = req.file;
+      if (!file) return res.redirect(303, '/admin/modules/' + mod.id + '?notice=module_created');
+
+      const magic = magicBytes[file.mimetype];
+      if (!magic || !magic(file.buffer)) {
+        return res.redirect(303, '/admin/modules/' + mod.id + '?error=invalid_file');
+      }
+      const ext = path.extname(file.originalname).toLowerCase() || '.bin';
+      const filename = 'mod_' + Date.now() + '_' + Math.random().toString(36).slice(2) + ext;
+      fs.writeFileSync(path.join(UPLOAD_DIR, filename), file.buffer);
+      modulesDb.addItem(db, {
+        moduleId: mod.id,
+        type: 'file',
+        title: String(req.body.item_title || '').trim() || file.originalname,
+        filePath: 'uploads/' + filename,
+        fileName: file.originalname,
+        fileSize: file.size,
+        sortOrder: 0,
+      });
+      return res.redirect(303, '/admin/modules/' + mod.id + '?notice=file_uploaded');
+    });
   });
 
   router.get('/:id', ...guard, (req, res, next) => {
@@ -94,9 +131,7 @@ function createAdminModuleRoutes({ db }) {
     const status = ['draft', 'published', 'hidden'].includes(req.body.status) ? req.body.status : 'draft';
     const requireSequential = req.body.require_sequential === '1';
     if (!title) {
-      req.session.flash = req.session.flash || [];
-      req.session.flash.push({ type: 'error', message: 'Title is required.' });
-      return res.redirect(303, '/admin/modules/' + id);
+      return res.redirect(303, '/admin/modules/' + id + '?error=module_title_required');
     }
     modulesDb.updateModule(db, id, { title, description, status, requireSequential });
     return res.redirect(303, '/admin/modules/' + id + '?notice=updated');
@@ -120,9 +155,7 @@ function createAdminModuleRoutes({ db }) {
     const type = ['page', 'file', 'link'].includes(req.body.type) ? req.body.type : 'page';
     const title = String(req.body.title || '').trim();
     if (!title) {
-      req.session.flash = req.session.flash || [];
-      req.session.flash.push({ type: 'error', message: 'Item title is required.' });
-      return res.redirect(303, '/admin/modules/' + moduleId);
+      return res.redirect(303, '/admin/modules/' + moduleId + '?error=module_item_title_required');
     }
     const sortOrder = modulesDb.listItems(db, moduleId).length;
     modulesDb.addItem(db, {
@@ -140,26 +173,18 @@ function createAdminModuleRoutes({ db }) {
   router.post('/:id/items/upload', ...guard, upload.single('file'), (req, res) => {
     const moduleId = Number(req.params.id);
     // Validate CSRF after multer parses the multipart body.
-    const csrfModule = require('../middleware/csrf');
-    const provided = (req.body && req.body._csrf) || '';
-    if (!csrfModule.safeEqual(req.session ? req.session.csrfToken : '', provided)) {
-      req.session.flash = req.session.flash || [];
-      req.session.flash.push({ type: 'error', message: 'Your form session has expired. Reload the page and try again.' });
-      return res.redirect(303, '/admin/modules/' + moduleId);
+    if (!csrfOk(req)) {
+      return res.redirect(303, '/admin/modules/' + moduleId + '?error=csrf_expired');
     }
     if (!req.file) {
-      req.session.flash = req.session.flash || [];
-      req.session.flash.push({ type: 'error', message: 'No file selected.' });
-      return res.redirect(303, '/admin/modules/' + moduleId);
+      return res.redirect(303, '/admin/modules/' + moduleId + '?error=no_file');
     }
     const buf = req.file.buffer;
     const mime = req.file.mimetype;
     let valid = true;
     if (magicBytes[mime]) valid = magicBytes[mime](buf);
     if (!valid) {
-      req.session.flash = req.session.flash || [];
-      req.session.flash.push({ type: 'error', message: 'Invalid file content.' });
-      return res.redirect(303, '/admin/modules/' + moduleId);
+      return res.redirect(303, '/admin/modules/' + moduleId + '?error=invalid_file');
     }
     const ext = path.extname(req.file.originalname).toLowerCase() || '.bin';
     const filename = 'mod_' + Date.now() + '_' + Math.random().toString(36).slice(2) + ext;

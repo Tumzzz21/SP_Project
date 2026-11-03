@@ -15,31 +15,27 @@
     <div>
       <p class="eyebrow">Admin · Module</p>
       <h1><%= module ? module.title : 'New module' %></h1>
+      <% if (module) { %>
+        <p class="muted">Status: <strong><%= module.status %></strong> · <%= (items || []).length %> item<%= (items || []).length === 1 ? '' : 's' %></p>
+      <% } else { %>
+        <p class="muted">Create the module and attach its first handout in one step.</p>
+      <% } %>
     </div>
     <% if (module) { %>
       <div class="page-head-actions">
-        <form method="post" action="/admin/modules/<%= module.id %>/publish" style="display:inline">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <button class="btn btn-primary btn-sm" type="submit">Publish</button>
-        </form>
-        <form method="post" action="/admin/modules/<%= module.id %>/hide" style="display:inline">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <button class="btn btn-secondary btn-sm" type="submit">Hide</button>
-        </form>
-        <form method="post" action="/admin/modules/<%= module.id %>/delete" style="display:inline">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <button class="btn btn-danger btn-sm" type="submit">Delete</button>
-        </form>
+        <a class="btn btn-secondary btn-sm" href="/modules/<%= module.id %>">View as student</a>
       </div>
     <% } %>
   </header>
-
 
   <div class="split">
     <div class="stack">
       <section class="panel">
         <h2><%= module ? 'Module details' : 'Create module' %></h2>
-        <form method="post" action="<%= module ? '/admin/modules/' + module.id : '/admin/modules' %>" class="form-stack" novalidate>
+        <form method="post"
+              action="<%= module ? '/admin/modules/' + module.id : '/admin/modules' %>"
+              enctype="<%= module ? 'application/x-www-form-urlencoded' : 'multipart/form-data' %>"
+              class="form-stack" novalidate>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
           <div class="field">
@@ -55,9 +51,9 @@
           <div class="field">
             <label class="field-label" for="status">Status</label>
             <select id="status" name="status">
-              <option value="draft" <%= module && module.status === 'draft' ? 'selected' : '' %>>Draft</option>
-              <option value="published" <%= module && module.status === 'published' ? 'selected' : '' %>>Published</option>
-              <option value="hidden" <%= module && module.status === 'hidden' ? 'selected' : '' %>>Hidden</option>
+              <option value="draft" <%= module && module.status === 'draft' ? 'selected' : '' %>>Draft — only admins can see it</option>
+              <option value="published" <%= module && module.status === 'published' ? 'selected' : '' %>>Published — visible to students</option>
+              <option value="hidden" <%= module && module.status === 'hidden' ? 'selected' : '' %>>Hidden — closed, progress kept</option>
             </select>
           </div>
 
@@ -68,17 +64,37 @@
             </label>
           </div>
 
+          <% if (!module) { %>
+            <div class="section-head section-head-inline" style="margin: var(--space-sm) 0 0;">
+              <h3 style="margin:0; font-size:1rem;">First handout (optional)</h3>
+              <span class="muted small">You can add more files later.</span>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="item_title">Handout title</label>
+              <input id="item_title" name="item_title" type="text" maxlength="120" placeholder="e.g. Phishing awareness handout">
+              <p class="field-help">Shown in the module's contents. Defaults to the file name.</p>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="file">File (PDF, PPTX, DOCX, PNG, JPG — max 20 MB)</label>
+              <input id="file" name="file" type="file" accept=".pdf,.pptx,.docx,.png,.jpg,.jpeg">
+            </div>
+          <% } %>
+
           <button class="btn btn-primary" type="submit"><%= module ? 'Save changes' : 'Create module' %></button>
         </form>
       </section>
-      <% if (module) { %>
 
-          <h3>Upload file</h3>
+      <% if (module) { %>
+        <section class="panel">
+          <h2>Add a file to this module</h2>
+          <p class="muted small">PDFs preview inline for students; other files get a download link.</p>
           <form method="post" action="/admin/modules/<%= module.id %>/items/upload" class="form-stack" enctype="multipart/form-data" novalidate>
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="field">
               <label class="field-label" for="file-title">Title</label>
-              <input id="file-title" name="title" type="text" maxlength="120">
+              <input id="file-title" name="title" type="text" maxlength="120" placeholder="e.g. Week 2 handout">
             </div>
             <div class="field">
               <label class="field-label" for="file">File (PDF, PPTX, DOCX, PNG, JPG — max 20 MB)</label>
@@ -87,25 +103,40 @@
             <button class="btn btn-primary" type="submit">Upload</button>
           </form>
         </section>
+
+        <section class="panel">
+          <h2>Delete module</h2>
+          <p class="muted small">
+            Removes the module, its items and its uploaded files. Student progress for this module is lost.
+          </p>
+          <form method="post" action="/admin/modules/<%= module.id %>/delete">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn-danger" type="submit">Delete this module</button>
+          </form>
+        </section>
       <% } %>
     </div>
 
     <div class="stack">
-      <% if (module && items && items.length > 0) { %>
+      <% if (module) { %>
         <section class="panel">
-          <h2>Items (<%= items.length %>)</h2>
-          <ul class="module-item-list">
-            <% items.forEach(function (item) { %>
-              <li class="module-item">
-                <span class="module-item-type badge badge-outline"><%= item.type %></span>
-                <span class="module-item-title"><%= item.title %></span>
-                <form method="post" action="/admin/modules/<%= module.id %>/items/<%= item.id %>/delete" style="display:inline">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                  <button class="btn btn-ghost btn-sm" type="submit">Remove</button>
-                </form>
-              </li>
-            <% }); %>
-          </ul>
+          <h2>Contents (<%= (items || []).length %>)</h2>
+          <% if (!items || items.length === 0) { %>
+            <p class="muted">No items yet. Upload a file above to start building this module.</p>
+          <% } else { %>
+            <ul class="module-item-list">
+              <% items.forEach(function (item) { %>
+                <li class="module-item">
+                  <span class="module-item-type badge badge-outline"><%= item.type %></span>
+                  <span class="module-item-title"><%= item.title %></span>
+                  <form method="post" action="/admin/modules/<%= module.id %>/items/<%= item.id %>/delete" style="display:inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button class="btn btn-ghost btn-sm" type="submit">Remove</button>
+                  </form>
+                </li>
+              <% }); %>
+            </ul>
+          <% } %>
         </section>
       <% } %>
     </div>

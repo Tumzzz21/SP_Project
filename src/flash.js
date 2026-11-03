@@ -161,7 +161,61 @@ const FLASH_MESSAGES = {
     type: 'error',
     message: 'Published quiz versions are immutable. Create a new draft version to make changes.',
   },
-  content_saved: {
+  module_title_required: {
+    type: 'error',
+    message: 'Enter a module title.',
+  },
+  module_item_title_required: {
+    type: 'error',
+    message: 'Enter a title for the item.',
+  },
+  csrf_expired: {
+    type: 'error',
+    message: 'Your form session has expired. Reload the page and try again.',
+  },
+  upload_failed: {
+    type: 'error',
+    message: 'That file could not be uploaded. Use a PDF, PPTX, DOCX, PNG or JPG under 20 MB.',
+  },
+  no_file: {
+    type: 'error',
+    message: 'Choose a file to upload.',
+  },
+  invalid_file: {
+    type: 'error',
+    message: 'That file content is not a valid PDF, image, or Office document.',
+  },  module_created: {
+    type: 'success',
+    message: 'Module created. Upload a file or publish it when ready.',
+  },
+  updated: {
+    type: 'success',
+    message: 'Module details saved.',
+  },
+  item_added: {
+    type: 'success',
+    message: 'Item added to the module.',
+  },
+  file_uploaded: {
+    type: 'success',
+    message: 'File uploaded and added to the module.',
+  },
+  item_deleted: {
+    type: 'success',
+    message: 'Item removed from the module.',
+  },
+  published: {
+    type: 'success',
+    message: 'Module published. Students can open it now.',
+  },
+  hidden: {
+    type: 'warning',
+    message: 'Module hidden. Students can no longer open it; their progress is kept.',
+  },
+  deleted: {
+    type: 'success',
+    message: 'Module deleted.',
+  },  content_saved: {
     type: 'success',
     message: 'Changes saved.',
   },
