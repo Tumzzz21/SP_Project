@@ -1,0 +1,16 @@
+<%# Static preview of one question: A-D option rows, no answers, no badges. %>
+<%# Locals: question (public shape with options), index (0-based). %>
+<div class="question-card" data-question-preview>
+  <p class="question-prompt">
+    <span class="question-number" aria-hidden="true"><%= index + 1 %></span>
+    <span><%= question.prompt %></span>
+  </p>
+  <div class="option-list-static">
+    <% (question.options || []).forEach(function (option, i) { %>
+      <div class="option-row option-row-static">
+        <span class="option-badge option-letter" aria-hidden="true"><%= String.fromCharCode(65 + i) %></span>
+        <span class="option-text"><%= option.label %></span>
+      </div>
+    <% }); %>
+  </div>
+</div>

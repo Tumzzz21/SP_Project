@@ -1080,3 +1080,55 @@ test('last admin dashboard stats', async () => {
   assert.equal(db.prepare('SELECT COUNT(*) AS c FROM users WHERE role=?').get('admin').c, 1);
   void auth;
 });
+
+test('question saving drops empty option slots and the preview letters them A-D', async () => {
+  const { app, db, adminAuth } = setupRoles();
+
+  const create = await request(app)
+    .post('/admin/quizzes')
+    .set('Cookie', adminAuth.cookie)
+    .send({ _csrf: adminAuth.csrfToken, title: 'Preview lettering quiz' });
+  assert.equal(create.status, 303, create.text);
+  const id = Number(/\/admin\/quizzes\/(\d+)/.exec(create.headers.location)[1]);
+
+  // The editor always renders six slots; the two extra ones are submitted blank.
+  const saved = await request(app)
+    .post(`/admin/quizzes/${id}/questions`)
+    .set('Cookie', adminAuth.cookie)
+    .send({
+      _csrf: adminAuth.csrfToken,
+      q_0_prompt: 'Which option is correct?',
+      q_0_explanation: 'Gamma is the answer.',
+      q_0_opt_0: 'Alpha',
+      q_0_opt_1: 'Beta',
+      q_0_opt_2: 'Gamma',
+      q_0_opt_3: 'Delta',
+      q_0_opt_4: '',
+      q_0_opt_5: '',
+      q_0_correct: '2',
+    });
+  assert.equal(saved.status, 303, saved.text);
+
+  const options = db
+    .prepare(
+      `SELECT o.label, o.is_correct AS isCorrect
+         FROM quiz_options o
+         JOIN quiz_questions q ON q.id = o.question_id
+        WHERE q.quiz_id = ?
+        ORDER BY o.position`,
+    )
+    .all(id);
+  assert.deepEqual(options.map((option) => option.label), ['Alpha', 'Beta', 'Gamma', 'Delta']);
+  assert.equal(options.filter((option) => option.isCorrect === 1).length, 1, 'exactly one correct');
+  assert.equal(options[2].isCorrect, 1, 'the correct slot is preserved after dropping blanks');
+
+  const preview = await request(app).get(`/admin/quizzes/${id}/preview`).set('Cookie', adminAuth.cookie);
+  assert.equal(preview.status, 200);
+  assert.equal((preview.text.match(/option-row option-row-static/g) || []).length, 4, 'four choice rows');
+  assert.match(preview.text, /option-letter"[^>]*>A</);
+  assert.match(preview.text, /option-letter"[^>]*>B</);
+  assert.match(preview.text, /option-letter"[^>]*>C</);
+  assert.match(preview.text, /option-letter"[^>]*>D</);
+  assert.doesNotMatch(preview.text, /option-marker/, 'old bullet markup is gone');
+  assert.doesNotMatch(preview.text, /class="question-list"/, 'no double numbering list');
+});

@@ -285,10 +285,12 @@ function parseQuestionForm(body) {
     questions.push({
       prompt,
       explanation,
-      options: optionLabels.map((optionLabel, slot) => ({
-        label: optionLabel,
-        isCorrect: slot === correctSlot,
-      })),
+      // Store only the slots the author actually filled: the editor renders
+      // empty extra slots, and persisting them put blank choices on the quiz.
+      options: optionLabels
+        .map((optionLabel, slot) => ({ label: optionLabel, slot }))
+        .filter((entry) => entry.label !== '')
+        .map((entry) => ({ label: entry.label, isCorrect: entry.slot === correctSlot })),
     });
   }
 

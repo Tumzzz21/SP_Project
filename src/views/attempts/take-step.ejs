@@ -54,7 +54,7 @@
         <% qq.options.forEach(function(option, oi){ %>
           <label class="option-row" style="pointer-events:none;">
             <input type="radio" disabled <%= sel === option.id ? 'checked' : '' %>>
-            <span class="option-circle" aria-hidden="true"></span>
+            <span class="option-badge option-letter" aria-hidden="true"><%= String.fromCharCode(65 + oi) %></span>
             <span class="option-text"><%= option.label %></span>
           </label>
         <% }); %>
@@ -81,7 +81,7 @@
     <% current.options.forEach(function(option, oi){ %>
       <label class="option-row">
         <input type="radio" name="q_<%= current.id %>" value="<%= option.id %>" data-qid="<%= current.id %>" <%= selected.get(current.id) === option.id ? 'checked' : '' %>>
-        <span class="option-circle" aria-hidden="true"></span>
+        <span class="option-badge option-letter" aria-hidden="true"><%= String.fromCharCode(65 + oi) %></span>
         <span class="option-text"><%= option.label %></span>
       </label>
     <% }); %>

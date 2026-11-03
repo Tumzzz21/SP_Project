@@ -115,6 +115,9 @@ function getPublicQuestions(db, quizId) {
 
   const byQuestion = new Map();
   for (const option of options) {
+    // Older rows (and the pre-fix editor) could persist blank option slots;
+    // never show them as choices.
+    if (!option.label || !option.label.trim()) continue;
     if (!byQuestion.has(option.questionId)) byQuestion.set(option.questionId, []);
     byQuestion.get(option.questionId).push({ id: option.id, position: option.position, label: option.label });
   }
@@ -159,6 +162,8 @@ function getAnswerKey(db, quizId) {
       });
     }
     const question = key.get(row.questionId);
+    // Blank option slots from older data are not real choices.
+    if (!row.label || !row.label.trim()) continue;
     question.options.push({ id: row.optionId, label: row.label, isCorrect: row.isCorrect });
     if (row.isCorrect) question.correctOptionIds.push(row.optionId);
   }
