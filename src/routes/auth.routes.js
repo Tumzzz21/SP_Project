@@ -6,7 +6,7 @@ const express = require('express');
 const { AppError } = require('../errors');
 const { createPkcePair } = require('../auth/oidc');
 const { setSessionCookie, clearSessionCookie } = require('../auth/session');
-const { safeNextPath, wantsJson } = require('../auth/guards');
+const { safeNextPath, wantsJson, googleSignInAvailable } = require('../auth/guards');
 const { hashPassword, verifyPassword, burnPasswordTime } = require('../auth/passwords');
 const {
   validateLoginInput,
@@ -136,14 +136,14 @@ function createAuthRoutes({ db, config, oidc, authLimiter }) {
    * the body), and the password check happens entirely server-side.
    */
 
-  function renderLoginPage(res, status, extra) {
+  function renderLoginPage(req, res, status, extra) {
     return res.status(status).render('login', {
       pageTitle: 'Sign in | CyberSafe',
       bodyClass: 'page-auth',
       next: extra.next || '',
       flash: extra.flash || [],
       devAuth: config.devAuth,
-      googleConfigured: config.google.configured,
+      googleConfigured: googleSignInAvailable(req, config),
       values: extra.values || { email: '' },
       errors: extra.errors || {},
       adminMode: Boolean(extra.adminMode),
@@ -157,7 +157,7 @@ function createAuthRoutes({ db, config, oidc, authLimiter }) {
       const adminMode = String((req.body && req.body.adminMode) || '') === '1';
 
       if (Object.keys(errors).length > 0) {
-        return renderLoginPage(res, 400, { values, errors, next: nextPath, adminMode });
+        return renderLoginPage(req, res, 400, { values, errors, next: nextPath, adminMode });
       }
 
       // The same answer for "no such account" and "wrong password", and the
@@ -172,7 +172,7 @@ function createAuthRoutes({ db, config, oidc, authLimiter }) {
       const passwordOk = stored ? await verifyPassword(submittedPassword, stored) : false;
       if (!stored || !passwordOk) {
         if (!stored) await burnPasswordTime(submittedPassword);
-        return renderLoginPage(res, 401, {
+        return renderLoginPage(req, res, 401, {
           values,
           next: nextPath,
           adminMode,
@@ -217,7 +217,7 @@ function createAuthRoutes({ db, config, oidc, authLimiter }) {
           flash: (extra && extra.flash) || [],
           errors: (extra && extra.errors) || errors,
           values,
-          googleConfigured: config.google.configured,
+          googleConfigured: googleSignInAvailable(req, config),
         });
 
       if (Object.keys(errors).length > 0) {

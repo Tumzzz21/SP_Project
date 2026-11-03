@@ -15,6 +15,29 @@ function safeNextPath(value, fallback = '/dashboard') {
   return value;
 }
 
+/**
+ * Whether the "Continue with Google" button can complete on this request.
+ *
+ * Google only returns to the origin registered in GOOGLE_REDIRECT_URI. Served
+ * from anywhere else (a Cloudflare quick tunnel, a LAN address, a staging
+ * host) the button would bounce the browser to that fixed callback - usually
+ * http://localhost:3001 - so it is hidden there instead.
+ *
+ * @param {import('express').Request} req
+ * @param {{appBaseUrl?: string, google?: {configured?: boolean}}} config
+ */
+function googleSignInAvailable(req, config) {
+  if (!config || !config.google || !config.google.configured) return false;
+  const host = String(req.get('host') || '').toLowerCase();
+  const hostname = host.replace(/:\d+$/, '');
+  if (['localhost', '127.0.0.1', '[::1]', '::1'].includes(hostname)) return true;
+  try {
+    return new URL(config.appBaseUrl).host.toLowerCase() === host;
+  } catch {
+    return false;
+  }
+}
+
 function requireSession(req, res, next) {
   if (req.user) return next();
   if (wantsJson(req)) {
@@ -67,4 +90,4 @@ function requireGuest(req, res, next) {
   return res.redirect(302, req.user.role === 'admin' ? '/admin' : '/dashboard');
 }
 
-module.exports = { requireSession, requireActive, requireRole, requireAdmin, requireStudent, requireGuest, wantsJson, safeNextPath };
+module.exports = { requireSession, requireActive, requireRole, requireAdmin, requireStudent, requireGuest, wantsJson, safeNextPath, googleSignInAvailable };

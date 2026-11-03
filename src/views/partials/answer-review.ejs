@@ -5,10 +5,10 @@
   <h2>Question <%= index + 1 %></h2>
   <p><%= answer.prompt %></p>
   <% if (options.length > 0) { %>
-    <% options.forEach(function (option) { %>
+    <% options.forEach(function (option, optionIndex) { %>
       <label class="option-row" style="pointer-events:none;">
         <input type="radio" disabled <%= answer.selectedOptionId === option.id ? 'checked' : '' %>>
-        <span class="option-circle" aria-hidden="true"></span>
+        <span class="option-badge option-letter" aria-hidden="true"><%= String.fromCharCode(65 + optionIndex) %></span>
         <span class="option-text"><%= option.label %></span>
         <% if (answer.selectedOptionId === option.id) { %>
           <% if (answer.isCorrect === 1) { %>

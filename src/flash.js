@@ -161,7 +161,65 @@ const FLASH_MESSAGES = {
     type: 'error',
     message: 'Published quiz versions are immutable. Create a new draft version to make changes.',
   },
-  content_saved: {
+  module_title_required: {
+    type: 'error',
+    message: 'Enter a module title.',
+  },
+  module_item_title_required: {
+    type: 'error',
+    message: 'Enter a title for the item.',
+  },
+  csrf_expired: {
+    type: 'error',
+    message: 'Your form session has expired. Reload the page and try again.',
+  },
+  upload_failed: {
+    type: 'error',
+    message: 'That file could not be uploaded. Use a PDF, PPTX, DOCX, PNG or JPG under 20 MB.',
+  },
+  no_file: {
+    type: 'error',
+    message: 'Choose a file to upload.',
+  },
+  invalid_file: {
+    type: 'error',
+    message: 'That file content is not a valid PDF, image, or Office document.',
+  },  module_created: {
+    type: 'success',
+    message: 'Module created. It is listed below — open it to add more content.',
+  },
+  module_created_with_file: {
+    type: 'success',
+    message: 'Module created with its first handout attached. It is listed below.',
+  },
+  updated: {
+    type: 'success',
+    message: 'Module details saved.',
+  },
+  item_added: {
+    type: 'success',
+    message: 'Item added to the module.',
+  },
+  file_uploaded: {
+    type: 'success',
+    message: 'File uploaded and added to the module.',
+  },
+  item_deleted: {
+    type: 'success',
+    message: 'Item removed from the module.',
+  },
+  published: {
+    type: 'success',
+    message: 'Module published. Students can open it now.',
+  },
+  hidden: {
+    type: 'warning',
+    message: 'Module hidden. Students can no longer open it; their progress is kept.',
+  },
+  deleted: {
+    type: 'success',
+    message: 'Module deleted.',
+  },  content_saved: {
     type: 'success',
     message: 'Changes saved.',
   },
@@ -182,12 +240,54 @@ const FLASH_MESSAGES = {
 
 const FLASH_CODES = Object.keys(FLASH_MESSAGES);
 
+const FLASH_COOKIE = 'cybersafe.flash';
+const FLASH_TYPES = new Set(['success', 'error', 'warning', 'info']);
+
+/** @param {string} header raw Cookie header */
+function parseCookieHeader(header) {
+  const out = {};
+  if (!header) return out;
+  for (const part of String(header).split(';')) {
+    const index = part.indexOf('=');
+    if (index === -1) continue;
+    const name = part.slice(0, index).trim();
+    if (!name) continue;
+    try {
+      out[name] = decodeURIComponent(part.slice(index + 1).trim());
+    } catch {
+      out[name] = part.slice(index + 1).trim();
+    }
+  }
+  return out;
+}
+
+/**
+ * Messages an earlier request parked in the flash cookie. The session object is
+ * a read-only database row, so `req.session.flash` never persisted; a short
+ * lived cookie carries those messages across one redirect instead.
+ * @param {import('express').Request} req
+ */
+function readFlashCookie(req) {
+  const raw = parseCookieHeader(req && req.headers ? req.headers.cookie : '')[FLASH_COOKIE];
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item) => item && typeof item.message === 'string' && FLASH_TYPES.has(item.type))
+      .slice(0, 3)
+      .map((item) => ({ type: item.type, message: item.message }));
+  } catch {
+    return [];
+  }
+}
+
 /**
  * @param {import('express').Request} req
  * @returns {Array<{type: string, message: string}>}
  */
 function readFlash(req) {
-  const messages = [];
+  const messages = readFlashCookie(req);
   for (const parameter of ['notice', 'error']) {
     const code = req.query && req.query[parameter];
     if (typeof code === 'string' && FLASH_MESSAGES[code]) {
@@ -197,4 +297,4 @@ function readFlash(req) {
   return messages;
 }
 
-module.exports = { FLASH_MESSAGES, FLASH_CODES, readFlash };
+module.exports = { FLASH_MESSAGES, FLASH_CODES, FLASH_COOKIE, readFlash, readFlashCookie };

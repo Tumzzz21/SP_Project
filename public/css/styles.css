@@ -2084,3 +2084,24 @@ html.text-large { font-size: 1.15rem; }
 @media (max-width: 480px) {
   .tips-grid { grid-template-columns: 1fr; }
 }
+
+/* ------------------------------------------------------------
+   Quiz question previews and A-D option letters
+   ------------------------------------------------------------ */
+.question-stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+.question-prompt { display: flex; align-items: baseline; gap: var(--space-sm); margin: 0 0 var(--space-md); font-weight: 600; }
+.question-number {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.7rem; height: 1.7rem; flex-shrink: 0;
+  border-radius: 50%; background: var(--accent-cyan); color: #04222a;
+  font-size: 0.8rem; font-weight: 700;
+}
+.option-row-static { cursor: default; }
+.option-row-static:hover { border-color: var(--color-border-soft); }
+.option-letter { width: 1.9rem; height: 1.9rem; font-size: 0.8rem; }
+.option-row input:checked + .option-letter {
+  background: var(--accent-cyan); border-color: var(--accent-cyan); color: #04222a;
+}
+
+/* Inline action forms (user management row actions) */
+.form-inline { display: inline; }

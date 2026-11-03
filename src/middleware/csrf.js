@@ -30,6 +30,7 @@ function csrfProtection(req, res, next) {
   // empty when this middleware runs. Skip global CSRF for upload routes;
   // the route handlers validate the token after multer parses the body.
   if (req.path === '/settings/profile/photo') return next();
+  if (req.path === '/admin/modules') return next();
   if (/^\/admin\/modules\/\d+\/items\/upload$/.test(req.path)) return next();
 
   const provided = req.get('x-csrf-token') || (req.body && req.body._csrf) || '';

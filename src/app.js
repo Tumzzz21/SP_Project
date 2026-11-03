@@ -10,7 +10,7 @@ const { createGoogleClient } = require('./auth/oidc');
 const { csrfProtection } = require('./middleware/csrf');
 const { requestId, securityHeaders, noStore, createAuthLimiter, createApiLimiter } = require('./middleware/security');
 const { errorHandler, notFoundHandler } = require('./middleware/errors');
-const { readFlash } = require('./flash');
+const { readFlash, FLASH_COOKIE } = require('./flash');
 const { createAuthRoutes } = require('./routes/auth.routes');
 const { createPageRoutes } = require('./routes/pages');
 const { createAttemptRoutes } = require('./routes/attempts');
@@ -108,6 +108,38 @@ function createApp({ config, db, oidc = null, logger = console }) {
 
   // Browser sessions must not be cached; authenticated JSON must not either.
   app.use(['/dashboard', '/admin', '/account', '/setup', '/api', '/quizzes', '/attempts'], noStore);
+
+  // Handlers push user feedback to `req.session.flash`, but the session object
+  // is a read-only database row, so nothing ever rendered those messages.
+  // Carry them to the next request in a short-lived, HttpOnly cookie.
+  app.use((req, res, next) => {
+    const hadFlashCookie = /(?:^|;\s*)cybersafe\.flash=/.test(String((req.headers && req.headers.cookie) || ''));
+    const originalWriteHead = res.writeHead;
+    let flushed = false;
+    res.writeHead = function writeHeadWithFlash(...args) {
+      if (!flushed) {
+        flushed = true;
+        try {
+          const pending = req.session && Array.isArray(req.session.flash) ? req.session.flash : null;
+          if (pending && pending.length > 0) {
+            res.cookie(FLASH_COOKIE, JSON.stringify(pending.slice(0, 3)), {
+              httpOnly: true,
+              sameSite: 'lax',
+              maxAge: 60 * 1000,
+              path: '/',
+            });
+            delete req.session.flash;
+          } else if (hadFlashCookie) {
+            res.clearCookie(FLASH_COOKIE, { path: '/' });
+          }
+        } catch {
+          // A flash message must never break the response.
+        }
+      }
+      return originalWriteHead.apply(this, args);
+    };
+    next();
+  });
 
   app.use((req, res, next) => {
     res.locals.flash = readFlash(req);

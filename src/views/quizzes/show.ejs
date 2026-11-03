@@ -30,21 +30,11 @@
       <span aria-hidden="true">·</span> Pass mark <%= quiz.passingScorePercent %>%
     </p>
 
-    <ol class="question-list">
-      <% questions.forEach(function (question) { %>
-        <li class="question-card">
-          <p class="question-prompt"><span class="question-number"><%= question.position %></span><%= question.prompt %></p>
-          <ul class="option-list">
-            <% question.options.forEach(function (option) { %>
-              <li class="option">
-                <span class="option-marker" aria-hidden="true"></span>
-                <span><%= option.label %></span>
-              </li>
-            <% }); %>
-          </ul>
-        </li>
+    <div class="question-stack">
+      <% questions.forEach(function (question, i) { %>
+        <%- include('../partials/question-preview', { question: question, index: i }) %>
       <% }); %>
-    </ol>
+    </div>
 
     <div class="page-actions">
       <a class="btn btn-secondary" href="/quizzes">Back to quizzes</a>

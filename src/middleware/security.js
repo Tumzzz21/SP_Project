@@ -22,7 +22,10 @@ function securityHeaders(config) {
         'frame-ancestors': ["'none'"],
         'form-action': ["'self'"],
         'img-src': ["'self'", 'data:'],
-        'style-src': ["'self'"],
+        // Templates use inline width/margin attributes (progress meters, small
+        // layout tweaks). Inline CSS cannot execute code, so it is allowed while
+        // scripts stay locked to same-origin files with no inline handlers.
+        'style-src': ["'self'", "'unsafe-inline'"],
         'script-src': ["'self'"],
         'font-src': ["'self'"],
         'connect-src': ["'self'"],

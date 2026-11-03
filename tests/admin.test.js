@@ -1080,3 +1080,251 @@ test('last admin dashboard stats', async () => {
   assert.equal(db.prepare('SELECT COUNT(*) AS c FROM users WHERE role=?').get('admin').c, 1);
   void auth;
 });
+
+test('question saving drops empty option slots and the preview letters them A-D', async () => {
+  const { app, db, adminAuth } = setupRoles();
+
+  const create = await request(app)
+    .post('/admin/quizzes')
+    .set('Cookie', adminAuth.cookie)
+    .send({ _csrf: adminAuth.csrfToken, title: 'Preview lettering quiz' });
+  assert.equal(create.status, 303, create.text);
+  const id = Number(/\/admin\/quizzes\/(\d+)/.exec(create.headers.location)[1]);
+
+  // The editor always renders six slots; the two extra ones are submitted blank.
+  const saved = await request(app)
+    .post(`/admin/quizzes/${id}/questions`)
+    .set('Cookie', adminAuth.cookie)
+    .send({
+      _csrf: adminAuth.csrfToken,
+      q_0_prompt: 'Which option is correct?',
+      q_0_explanation: 'Gamma is the answer.',
+      q_0_opt_0: 'Alpha',
+      q_0_opt_1: 'Beta',
+      q_0_opt_2: 'Gamma',
+      q_0_opt_3: 'Delta',
+      q_0_opt_4: '',
+      q_0_opt_5: '',
+      q_0_correct: '2',
+    });
+  assert.equal(saved.status, 303, saved.text);
+
+  const options = db
+    .prepare(
+      `SELECT o.label, o.is_correct AS isCorrect
+         FROM quiz_options o
+         JOIN quiz_questions q ON q.id = o.question_id
+        WHERE q.quiz_id = ?
+        ORDER BY o.position`,
+    )
+    .all(id);
+  assert.deepEqual(options.map((option) => option.label), ['Alpha', 'Beta', 'Gamma', 'Delta']);
+  assert.equal(options.filter((option) => option.isCorrect === 1).length, 1, 'exactly one correct');
+  assert.equal(options[2].isCorrect, 1, 'the correct slot is preserved after dropping blanks');
+
+  const preview = await request(app).get(`/admin/quizzes/${id}/preview`).set('Cookie', adminAuth.cookie);
+  assert.equal(preview.status, 200);
+  assert.equal((preview.text.match(/option-row option-row-static/g) || []).length, 4, 'four choice rows');
+  assert.match(preview.text, /option-letter"[^>]*>A</);
+  assert.match(preview.text, /option-letter"[^>]*>B</);
+  assert.match(preview.text, /option-letter"[^>]*>C</);
+  assert.match(preview.text, /option-letter"[^>]*>D</);
+  assert.doesNotMatch(preview.text, /option-marker/, 'old bullet markup is gone');
+  assert.doesNotMatch(preview.text, /class="question-list"/, 'no double numbering list');
+});
+
+test('a module can be created with its first handout in one submit', async () => {
+  const { app, db, adminAuth } = setupRoles();
+  const pdf = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
+
+  const response = await request(app)
+    .post('/admin/modules')
+    .set('Cookie', adminAuth.cookie)
+    .field('_csrf', adminAuth.csrfToken)
+    .field('title', 'Phishing awareness')
+    .field('description', 'One handout to start with.')
+    .field('status', 'published')
+    .field('item_title', 'Phishing handout')
+    .attach('file', pdf, { filename: 'phishing.pdf', contentType: 'application/pdf' });
+
+  assert.equal(response.status, 303, response.text);
+  assert.equal(response.headers.location, '/modules?notice=module_created_with_file');
+
+  // The admin lands back on the module list, so find the row by title.
+  const mod = db.prepare('SELECT * FROM modules WHERE title = ?').get('Phishing awareness');
+  const moduleId = mod.id;
+  assert.equal(mod.title, 'Phishing awareness');
+  assert.equal(mod.status, 'published', 'status chosen in the form is applied');
+
+  // The list confirms the creation and shows the new module.
+  const listPage = await request(app)
+    .get('/modules?notice=module_created_with_file')
+    .set('Cookie', adminAuth.cookie);
+  assert.match(listPage.text, /first handout attached/);
+  assert.match(listPage.text, /Phishing awareness/);
+
+  const item = db.prepare('SELECT * FROM module_items WHERE module_id = ?').get(moduleId);
+  assert.equal(item.type, 'file');
+  assert.equal(item.title, 'Phishing handout');
+  assert.equal(item.file_name, 'phishing.pdf');
+
+  const fs = require('node:fs');
+  const path = require('node:path');
+  fs.rmSync(path.join(process.cwd(), 'data', item.file_path), { force: true });
+
+  // The new-module page already offers the upload fields.
+  const newPage = await request(app).get('/admin/modules/new').set('Cookie', adminAuth.cookie);
+  assert.match(newPage.text, /enctype="multipart\/form-data"/);
+  assert.match(newPage.text, /name="item_title"/);
+  assert.match(newPage.text, /name="file"/);
+
+  // The edit page has one status control and a clearly separated delete action.
+  const editPage = await request(app).get(`/admin/modules/${moduleId}`).set('Cookie', adminAuth.cookie);
+  assert.match(editPage.text, /name="status"/);
+  assert.doesNotMatch(editPage.text, /action="\/admin\/modules\/\d+\/publish"/, 'no duplicate publish button');
+  assert.doesNotMatch(editPage.text, /action="\/admin\/modules\/\d+\/hide"/, 'no duplicate hide button');
+  assert.match(editPage.text, /action="\/admin\/modules\/\d+\/delete"/);
+});
+
+test('module form errors stay visible after the redirect', async () => {
+  const { app, adminAuth } = setupRoles();
+
+  const post = await request(app)
+    .post('/admin/modules')
+    .set('Cookie', adminAuth.cookie)
+    .field('_csrf', adminAuth.csrfToken)
+    .field('title', '')
+    .field('status', 'draft');
+  assert.equal(post.status, 303);
+  assert.match(post.headers.location, /error=module_title_required$/);
+
+  // The browser follows the redirect, so the message is on that URL.
+  const page = await request(app).get(post.headers.location).set('Cookie', adminAuth.cookie);
+  assert.equal(page.status, 200);
+  assert.match(page.text, /Enter a module title/);
+});
+
+test('a draft module previews for admins but is not found for students', async () => {
+  const { app, db, adminAuth, studentAuth } = setupRoles();
+  const modulesDb = require('../src/db/modules');
+  const draft = modulesDb.createModule(db, { title: 'Draft preview module', description: '', status: 'draft' });
+
+  // Students get a 404 page; this used to surface as a 500.
+  const asStudent = await request(app).get(`/modules/${draft.id}`).set('Cookie', studentAuth.cookie);
+  assert.equal(asStudent.status, 404);
+  assert.match(asStudent.text, /not found/i);
+  assert.doesNotMatch(asStudent.text, /Something went wrong/);
+
+  // Admins can open it, clearly marked as a preview.
+  const asAdmin = await request(app).get(`/modules/${draft.id}`).set('Cookie', adminAuth.cookie);
+  assert.equal(asAdmin.status, 200);
+  assert.match(asAdmin.text, /Draft preview/);
+  assert.match(asAdmin.text, /Draft preview module/);
+
+  const missing = await request(app).get('/modules/99999').set('Cookie', adminAuth.cookie);
+  assert.equal(missing.status, 404);
+});
+
+test('module pages render their markdown safely', async () => {
+  const { app, db, studentAuth } = setupRoles();
+  const seed = seedContent(db);
+
+  const page = await request(app).get(`/modules/${seed.moduleId}`).set('Cookie', studentAuth.cookie);
+  assert.equal(page.status, 200);
+  assert.match(page.text, /<h2>Heading<\/h2>/, 'markdown heading is rendered');
+  assert.match(page.text, /<strong>bold<\/strong>/, 'inline markdown is rendered');
+  assert.doesNotMatch(page.text, /## Heading/, 'no raw markdown leaks to students');
+  assert.doesNotMatch(page.text, /<script>alert\(1\)<\/script>/, 'stored HTML is escaped');
+});
+
+test('draft module files open for admins and stay closed for students', async () => {
+  const { app, db, adminAuth, studentAuth } = setupRoles();
+  const modulesDb = require('../src/db/modules');
+  const fs = require('node:fs');
+  const path = require('node:path');
+
+  const name = `audit-${Date.now()}.pdf`;
+  const filePath = path.join(process.cwd(), 'data', 'uploads', name);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, Buffer.from('%PDF-1.4\n%%EOF\n'));
+
+  const draft = modulesDb.createModule(db, { title: 'Draft file module', status: 'draft' });
+  modulesDb.addItem(db, {
+    moduleId: draft.id,
+    type: 'file',
+    title: 'Handout',
+    filePath: 'uploads/' + name,
+    fileName: 'handout "quoted" name.pdf',
+    fileSize: 16,
+  });
+
+  const asAdmin = await request(app).get(`/files/${name}`).set('Cookie', adminAuth.cookie);
+  assert.equal(asAdmin.status, 200, 'admins can preview files of unpublished modules');
+  assert.match(asAdmin.headers['content-disposition'], /filename\*=UTF-8''/);
+
+  const asStudent = await request(app).get(`/files/${name}`).set('Cookie', studentAuth.cookie);
+  assert.equal(asStudent.status, 403);
+
+  fs.rmSync(filePath, { force: true });
+});
+
+test('rejected uploads show a message instead of a 500 page', async () => {
+  const { app, db, adminAuth } = setupRoles();
+  const seed = seedContent(db);
+
+  const moduleUpload = await request(app)
+    .post(`/admin/modules/${seed.moduleId}/items/upload`)
+    .set('Cookie', adminAuth.cookie)
+    .field('_csrf', adminAuth.csrfToken)
+    .attach('file', Buffer.from('hello'), { filename: 'notes.txt', contentType: 'text/plain' });
+  assert.equal(moduleUpload.status, 303, moduleUpload.text);
+  assert.match(moduleUpload.headers.location, /error=upload_failed$/);
+
+  const avatar = await request(app)
+    .post('/settings/profile/photo')
+    .set('Cookie', adminAuth.cookie)
+    .field('_csrf', adminAuth.csrfToken)
+    .attach('avatar', Buffer.from('hello'), { filename: 'notes.txt', contentType: 'text/plain' });
+  assert.equal(avatar.status, 303, avatar.text);
+  assert.equal(avatar.headers.location, '/settings/profile');
+});
+
+test('admin actions leave a visible confirmation across the redirect', async () => {
+  const { app, db, adminAuth } = setupRoles();
+  const student = createUser(db, { email: 'flash.student@example.test', username: 'flashstudent' });
+
+  const post = await request(app)
+    .post(`/admin/users/${student.id}/disable`)
+    .set('Cookie', adminAuth.cookie)
+    .type('form')
+    .send({ _csrf: adminAuth.csrfToken, _confirm: '1' });
+  assert.equal(post.status, 303, post.text);
+
+  const flashCookie = (post.headers['set-cookie'] || [])
+    .map((cookie) => cookie.split(';')[0])
+    .find((cookie) => cookie.startsWith('cybersafe.flash='));
+  assert.ok(flashCookie, 'the message travels in a short-lived cookie');
+
+  const page = await request(app)
+    .get('/admin/users')
+    .set('Cookie', `${adminAuth.cookie}; ${flashCookie}`);
+  assert.match(page.text, /disabled\./, 'the confirmation is rendered');
+
+  const clearing = (page.headers['set-cookie'] || [])
+    .map((cookie) => cookie.split(';')[0])
+    .filter((cookie) => cookie.startsWith('cybersafe.flash='));
+  assert.ok(clearing.some((cookie) => cookie.endsWith('cybersafe.flash=')), 'the cookie is cleared after use');
+});
+
+test('draft modules sink to the bottom of the module list for admins', async () => {
+  const { app, db, adminAuth } = setupRoles();
+  const modulesDb = require('../src/db/modules');
+  seedContent(db); // published "Test module"
+  modulesDb.createModule(db, { title: 'Zzz hidden module', status: 'hidden' });
+  modulesDb.createModule(db, { title: 'Zzz draft module', status: 'draft' });
+
+  const page = await request(app).get('/modules').set('Cookie', adminAuth.cookie);
+  assert.equal(page.status, 200);
+  const order = [...page.text.matchAll(/class="module-row-title">([^<]+)</g)].map((match) => match[1]);
+  assert.deepEqual(order, ['Test module', 'Zzz hidden module', 'Zzz draft module']);
+});

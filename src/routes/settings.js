@@ -505,7 +505,20 @@ function createSettingsRoutes({ db }) {
     },
   });
 
-  router.post('/profile/photo', requireActive, accountLimiter, upload.single('avatar'), async (req, res) => {
+  // Multer runs before the handler; catch its rejections so a wrong file type
+  // or an oversized image shows a message instead of a 500 page.
+  const uploadAvatar = (req, res, next) => {
+    upload.single('avatar')(req, res, (error) => {
+      if (error) {
+        return flashAndRedirect(req, res, '/settings/profile', 'error', error.code === 'LIMIT_FILE_SIZE'
+          ? 'That image is too large. Use one under 2 MB.'
+          : 'Only PNG, JPEG, or WebP images are allowed.');
+      }
+      return next();
+    });
+  };
+
+  router.post('/profile/photo', requireActive, accountLimiter, uploadAvatar, async (req, res) => {
     try {
       // Validate CSRF after multer parses the multipart body.
       const csrfModule = require('../middleware/csrf');

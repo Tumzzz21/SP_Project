@@ -220,6 +220,29 @@ test('the login card presents email/password alongside Google', async () => {
   assert.match(offPage.text, /Sign in to CyberSafe/);
 });
 
+test('Google sign-in is hidden when the page is served from another origin', async () => {
+  // A quick tunnel (or any non-configured host) cannot receive Google's
+  // callback: GOOGLE_REDIRECT_URI points at localhost, so offering the button
+  // there would bounce the browser to a different origin mid-flow.
+  const googleOn = createContext({
+    config: testConfig({ google: { configured: true, status: 'configured', clientId: 'id', clientSecret: 'secret' } }),
+  });
+
+  const tunnel = await request(googleOn.app).get('/login').set('Host', 'bids-vocals-loaded-populations.trycloudflare.com');
+  assert.equal(tunnel.status, 200);
+  assert.match(tunnel.text, /Sign in to CyberSafe/);
+  assert.ok(!tunnel.text.includes('Continue with Google'), 'no button that would strand the user on localhost');
+  assert.ok(!tunnel.text.includes('auth-divider'));
+
+  const local = await request(googleOn.app).get('/login').set('Host', 'localhost:3001');
+  assert.match(local.text, /Continue with Google/, 'localhost still offers Google');
+
+  // The register page follows the same rule.
+  const tunnelRegister = await request(googleOn.app).get('/register').set('Host', 'abc.trycloudflare.com');
+  assert.equal(tunnelRegister.status, 200);
+  assert.ok(!tunnelRegister.text.includes('Continue with Google'));
+});
+
 test('no development sign-in section or development banner ever renders on pages', async () => {
   // devAuth on (and Google off) is the exact setup where the old development
   // clutter used to appear.

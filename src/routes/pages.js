@@ -3,7 +3,7 @@
 const express = require('express');
 
 const { AppError } = require('../errors');
-const { requireActive, requireStudent, requireGuest, safeNextPath } = require('../auth/guards');
+const { requireActive, requireStudent, requireGuest, safeNextPath, googleSignInAvailable } = require('../auth/guards');
 const { readFlash } = require('../flash');
 const users = require('../db/users');
 const modulesDb = require('../db/modules');
@@ -65,7 +65,7 @@ function createPageRoutes({ db, config }) {
       next: safeNextPath(String(req.query.next || ''), ''),
       flash: readFlash(req),
       devAuth: config.devAuth,
-      googleConfigured: config.google.configured,
+      googleConfigured: googleSignInAvailable(req, config),
       values: { email: '' },
       errors: {},
       adminMode: false,
@@ -79,7 +79,7 @@ function createPageRoutes({ db, config }) {
       next: safeNextPath(String(req.query.next || ''), '/admin'),
       flash: readFlash(req),
       devAuth: config.devAuth,
-      googleConfigured: config.google.configured,
+      googleConfigured: googleSignInAvailable(req, config),
       values: { email: '' },
       errors: {},
       adminMode: true,
@@ -93,7 +93,7 @@ function createPageRoutes({ db, config }) {
       flash: readFlash(req),
       errors: {},
       values: { email: '' },
-      googleConfigured: config.google.configured,
+      googleConfigured: googleSignInAvailable(req, config),
     });
   });
 

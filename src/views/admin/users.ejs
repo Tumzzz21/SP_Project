@@ -45,19 +45,19 @@
               <td><%= u.lastLoginAt ? formatDateTime(u.lastLoginAt) : '—' %></td>
               <td>
                 <% if (u.id !== user.id) { %>
-                  <form method="post" action="/admin/users/<%= u.id %>/<%= u.status === 'disabled' ? 'enable' : 'disable' %>" style="display:inline;" onsubmit="return confirm('Are you sure?');">
+                  <form method="post" action="/admin/users/<%= u.id %>/<%= u.status === 'disabled' ? 'enable' : 'disable' %>" class="form-inline" data-confirm="Change this account's status?">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <input type="hidden" name="_confirm" value="1">
                     <button class="btn btn-ghost btn-sm" type="submit"><%= u.status === 'disabled' ? 'Enable' : 'Disable' %></button>
                   </form>
                   <% if (u.role === 'admin') { %>
-                    <form method="post" action="/admin/users/<%= u.id %>/demote" style="display:inline;" onsubmit="return confirm('Demote this admin to student?');">
+                    <form method="post" action="/admin/users/<%= u.id %>/demote" class="form-inline" data-confirm="Demote this admin to student?">
                       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                       <input type="hidden" name="_confirm" value="1">
                       <button class="btn btn-ghost btn-sm" type="submit">Demote</button>
                     </form>
                   <% } else { %>
-                    <form method="post" action="/admin/users/<%= u.id %>/promote" style="display:inline;" onsubmit="return confirm('Promote this user to admin?');">
+                    <form method="post" action="/admin/users/<%= u.id %>/promote" class="form-inline" data-confirm="Promote this user to admin?">
                       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                       <input type="hidden" name="_confirm" value="1">
                       <button class="btn btn-ghost btn-sm" type="submit">Promote</button>
