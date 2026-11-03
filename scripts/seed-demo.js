@@ -17,7 +17,7 @@ const topics=[];
 const quizDescriptions={
   'Phishing awareness':'Test your ability to spot phishing emails, fake login pages, and malicious links.',
   'Password security':'Check your knowledge of strong passwords, MFA, and password managers.',
-  'Online scams':'Recognise common scams targeting students and how to avoid them.',
+  'Online scams':'Recognise common scams targeting users and how to avoid them.',
   'Data privacy':'See how well you protect personal data and understand app privacy.',
   'Responsible internet use':'Assess your understanding of digital citizenship and online responsibility.',
 };

@@ -1,0 +1,45 @@
+<%- include('partials/head') %>
+
+<main id="main" class="shell page">
+  <%- include('partials/flash') %>
+
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Stay safe online</p>
+      <h1>Safety tips</h1>
+      <p class="muted">
+        Practical habits that stop the most common attacks on students — free to read, no sign-in needed.
+        Share them with anyone who needs them.
+      </p>
+    </div>
+    <% if (!user) { %>
+      <div class="page-head-actions">
+        <a class="btn btn-primary btn-sm" href="/login">Sign in to practise</a>
+      </div>
+    <% } else { %>
+      <div class="page-head-actions">
+        <a class="btn btn-secondary btn-sm" href="/modules">Browse modules</a>
+        <a class="btn btn-primary btn-sm" href="/quizzes">Take a quiz</a>
+      </div>
+    <% } %>
+  </header>
+
+  <div class="tips-grid">
+    <% tips.forEach(function (tip) { %>
+      <section class="tip-card" id="tip-<%= tip.id %>" aria-labelledby="tip-<%= tip.id %>-title">
+        <div class="tip-card-head">
+          <span class="tip-card-icon" aria-hidden="true"><%- include('partials/icon', { name: tip.icon, size: 22 }) %></span>
+          <h2 id="tip-<%= tip.id %>-title"><%= tip.title %></h2>
+        </div>
+        <p class="muted"><%= tip.summary %></p>
+        <ul class="tip-list">
+          <% tip.tips.forEach(function (line) { %>
+            <li><%= line %></li>
+          <% }); %>
+        </ul>
+      </section>
+    <% }); %>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

@@ -3,84 +3,88 @@
 <main id="main" class="shell page">
   <%- include('../partials/flash') %>
 
-  <header class="page-head">
+  <header class="page-head quiz-page-head">
     <div>
       <p class="eyebrow">Quizzes</p>
       <h1><%= adminView ? 'Quiz catalogue' : 'Check what you have learned' %></h1>
-      <p class="muted">
+      <p class="page-subtitle">
         <%= adminView
-          ? 'Published quiz versions as students see them. Check what you have learned.'
+          ? 'Every live quiz at a glance. Use the Archived filter to review retired versions.'
           : 'Short checks with server-side grading and explanations after you submit.' %>
       </p>
     </div>
     <% if (adminView) { %>
-    <div class="page-head-actions">
-      <a class="btn btn-primary btn-sm" href="/admin/quizzes/new">+ New quiz</a>
-    </div>
+      <div class="page-head-actions">
+        <a class="btn btn-primary" href="/admin/quizzes/new">+ New quiz</a>
+      </div>
     <% } else { %>
-    <div class="page-head-actions">
-      <a class="btn btn-secondary" href="/quizzes/history">Your quiz history</a>
-    </div>
+      <div class="page-head-actions">
+        <a class="btn btn-secondary" href="/quizzes/history">Your quiz history</a>
+      </div>
     <% } %>
   </header>
 
   <% if (!adminView) { %>
-    <div class="notice notice-info">
+    <div class="notice notice-info quiz-attempts-note">
       <p><strong>How attempts work.</strong> An attempt is pinned to the published version you started, so later edits cannot change old results. You can review every completed attempt; only you can see your history.</p>
     </div>
   <% } %>
 
+  <div class="quiz-filters" data-quiz-filters data-active-filter="<%= activeFilter %>">
+    <div class="quiz-search-field">
+      <label class="sr-only" for="quiz-search">Search quizzes</label>
+      <span class="quiz-search-icon" aria-hidden="true">
+        <%- include('../partials/icon', { name: 'search', size: 18 }) %>
+      </span>
+      <input id="quiz-search" type="search" placeholder="Search quizzes" autocomplete="off" data-quiz-search>
+    </div>
+    <div class="quiz-filter-chips" role="group" aria-label="Filter quizzes">
+      <button type="button" class="chip<%= activeFilter === 'all' ? ' is-active' : '' %>" data-quiz-filter="all" aria-pressed="<%= activeFilter === 'all' %>">All</button>
+      <% if (adminView) { %>
+        <button type="button" class="chip<%= activeFilter === 'published' ? ' is-active' : '' %>" data-quiz-filter="published" aria-pressed="<%= activeFilter === 'published' %>">Published</button>
+        <button type="button" class="chip<%= activeFilter === 'draft' ? ' is-active' : '' %>" data-quiz-filter="draft" aria-pressed="<%= activeFilter === 'draft' %>">Draft</button>
+        <button type="button" class="chip<%= activeFilter === 'archived' ? ' is-active' : '' %>" data-quiz-filter="archived" aria-pressed="<%= activeFilter === 'archived' %>">Archived</button>
+      <% } else { %>
+        <button type="button" class="chip" data-quiz-filter="not-attempted" aria-pressed="false">Not attempted</button>
+        <button type="button" class="chip" data-quiz-filter="completed" aria-pressed="false">Completed</button>
+      <% } %>
+    </div>
+  </div>
+
   <% if (quizzes.length === 0) { %>
     <div class="empty-state">
-      <h3>No quizzes are published yet</h3>
-      <p class="muted">Published quizzes appear here once they are added on the server.</p>
+      <h3><%= adminView ? 'No quizzes have been created yet' : 'No quizzes are published yet' %></h3>
+      <p class="muted">
+        <%= adminView
+          ? 'Create the first quiz, add questions to the draft, then publish it.'
+          : 'Published quizzes appear here once they are added on the server.' %>
+      </p>
     </div>
   <% } else { %>
-    <ul class="lesson-grid">
+    <ul class="quiz-grid" data-quiz-grid>
       <% quizzes.forEach(function (quiz) { %>
-        <li class="lesson-card">
-          <div class="lesson-meta">
-            <span class="badge"><%= quiz.status %></span>
-            <span class="muted">Version <%= quiz.version %></span>
-            <% if (adminView) { %>
-            <a href="/admin/quizzes/<%= quiz.id %>" class="btn btn-ghost btn-sm">Edit</a>
-            <% if (quiz.status === 'draft') { %>
-            <form method="post" action="/admin/quizzes/<%= quiz.id %>/publish">
-              <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-              <button class="btn btn-ghost btn-sm" type="submit">Publish</button>
-            </form>
-            <% } else if (quiz.status === 'published') { %>
-            <form method="post" action="/admin/quizzes/<%= quiz.id %>/archive">
-              <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-              <button class="btn btn-ghost btn-sm" type="submit">Archive</button>
-            </form>
-            <% } %>
-            <% } %>
-          </div>
-          <h3><a href="/quizzes/<%= quiz.slug %>"><%= quiz.title %></a></h3>
-          <p class="muted"><%= quiz.description %></p>
-          <div class="lesson-footer">
-            <% if (adminView) { %>
-              <span class="muted"><%= counts.get(quiz.id) || 0 %> question<%= (counts.get(quiz.id) || 0) === 1 ? '' : 's' %> · pass mark <%= quiz.passingScorePercent %>%</span>
-              <a class="link-arrow" href="/quizzes/<%= quiz.slug %>">Preview <span aria-hidden="true">→</span></a>
-            <% } else { %>
-              <span class="muted">
-                <%= quiz.questionCount %> question<%= quiz.questionCount === 1 ? '' : 's' %>
-                <% if (quiz.bestPercentage !== null) { %>
-                  · best <%= quiz.bestPercentage %>%
-                <% } else if (quiz.attempts > 0) { %>
-                  · no completed attempt
-                <% } %>
-              </span>
-              <a class="link-arrow" href="/quizzes/<%= quiz.slug %>">
-                <%= quiz.openAttemptId ? 'Resume' : quiz.attempts > 0 ? 'Try again' : 'Start quiz' %>
-                <span aria-hidden="true">→</span>
-              </a>
-            <% } %>
-          </div>
-        </li>
+        <%- include('./quiz-card', { quiz: quiz, counts: counts, adminView: adminView, csrfToken: typeof csrfToken !== 'undefined' ? csrfToken : '' }) %>
       <% }); %>
     </ul>
+  <% } %>
+
+  <div class="empty-state quiz-filter-empty" data-quiz-empty hidden>
+    <h3>No quizzes match those filters</h3>
+    <p class="muted">Try a different search term or choose another filter.</p>
+  </div>
+
+  <% if (adminView && archivedQuizzes.length > 0) { %>
+    <details class="quiz-archive" data-quiz-archive<%= activeFilter === 'archived' ? ' open' : '' %>>
+      <summary>
+        <span>Archived quizzes</span>
+        <span class="quiz-archive-count"><%= archivedQuizzes.length %></span>
+      </summary>
+      <ul class="quiz-grid quiz-grid--archive">
+        <% archivedQuizzes.forEach(function (quiz) { %>
+          <%- include('./quiz-card', { quiz: quiz, counts: counts, adminView: adminView, csrfToken: typeof csrfToken !== 'undefined' ? csrfToken : '' }) %>
+        <% }); %>
+      </ul>
+    </details>
   <% } %>
 </main>
 

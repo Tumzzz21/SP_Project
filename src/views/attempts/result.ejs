@@ -40,33 +40,7 @@
     </div>
 
     <% answers.forEach(function (answer, i) { %>
-      <div class="quiz-card" style="margin-bottom:1rem;">
-        <h2>Question <%= i + 1 %></h2>
-        <p><%= answer.prompt %></p>
-        <% (answer.options || []).forEach(function (option) { %>
-          <label class="option-row" style="pointer-events:none;">
-            <input type="radio" disabled <%= answer.selectedOptionId === option.id ? 'checked' : '' %>>
-            <span class="option-circle" aria-hidden="true"></span>
-            <span class="option-text"><%= option.label %></span>
-            <% if (answer.selectedOptionId === option.id) { %>
-              <% if (answer.isCorrect === 1) { %>
-                <span class="chip chip-pass">Correct</span>
-              <% } else { %>
-                <span class="chip chip-fail">Incorrect</span>
-              <% } %>
-            <% } %>
-            <% if (answer.selectedOptionId !== option.id && option.id === answer.correctOptionId) { %>
-              <span class="chip chip-pass">Correct answer</span>
-            <% } %>
-          </label>
-        <% }); %>
-        <% if (answer.selectedOptionId === null) { %>
-          <p class="muted" style="color:var(--accent-amber);">Not answered</p>
-        <% } %>
-        <div class="explanation-box">
-          <p><strong>Why:</strong> <%= answer.explanation %></p>
-        </div>
-      </div>
+      <%- include('../partials/answer-review', { answer: answer, index: i }) %>
     <% }); %>
   </section>
 

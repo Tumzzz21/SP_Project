@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 const express = require('express');
 
@@ -7,6 +7,7 @@ const { requireActive, requireStudent } = require('../auth/guards');
 const { readFlash } = require('../flash');
 const quizzesDb = require('../db/quizzes');
 const attemptsDb = require('../db/attempts');
+const { reviewAnswers } = require('../review');
 const { percent, validateAnswerKey, parseAnswerFields, gradeAnswers } = require('../grading');
 
 /** Lenient selection map used only to re-check radio buttons after a 400. */
@@ -142,28 +143,16 @@ function createAttemptRoutes({ db }) {
     }
 
     if (attempt.status === 'submitted') {
-      const answers = attemptsDb.answersForReview(db, attempt.id);
-      const questions = quizzesDb.getPublicQuestions(db, quiz.id);
-      const byId = new Map(questions.map((q) => [q.id, q]));
-      const enriched = answers.map((a) => {
-        const q = byId.get(a.questionId) || {};
-        const opts = q.options || [];
-        const correct = opts.find((o) => o.position === a.correctPosition) || null;
-        return {
-          ...a,
-          options: opts,
-          correctOptionId: correct ? correct.id : null,
-        };
-      });
+      const answers = reviewAnswers(db, quiz.id, attemptsDb.answersForReview(db, attempt.id));
       return res.render('attempts/result', {
         pageTitle: `Result: ${quiz.title} | CyberSafe`,
         bodyClass: 'page-app',
         activeNav: 'quizzes',
         attempt,
         quiz,
-        answers: enriched,
-        correctCount: enriched.filter((a) => a.isCorrect === 1).length,
-        unansweredCount: enriched.filter((a) => a.selectedOptionId === null).length,
+        answers,
+        correctCount: answers.filter((a) => a.isCorrect === 1).length,
+        unansweredCount: answers.filter((a) => a.selectedOptionId === null).length,
         percentage: percent(attempt.scorePoints, attempt.maxPoints),
         latestPublished: quizzesDb.findPublishedBySlug(db, quiz.slug),
         flash: readFlash(req),

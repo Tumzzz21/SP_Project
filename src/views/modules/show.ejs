@@ -87,6 +87,27 @@
     </section>
   </div>
 
+  <% if (quizzes && quizzes.length > 0) { %>
+    <section class="module-quizzes" aria-labelledby="module-quizzes-title">
+      <div class="section-head">
+        <h2 id="module-quizzes-title">Quizzes in this module</h2>
+        <p class="muted">Check what you learned — results are saved to your history.</p>
+      </div>
+      <ul class="module-quiz-list">
+        <% quizzes.forEach(function (quiz) { %>
+          <li class="module-quiz-card">
+            <div class="module-quiz-info">
+              <h3><a href="/quizzes/<%= quiz.slug %>"><%= quiz.title %></a></h3>
+              <p class="muted"><%= quiz.description || 'A short knowledge check.' %></p>
+              <p class="muted small">Version <%= quiz.version %> · passing score <%= quiz.passingScorePercent %>%</p>
+            </div>
+            <a class="btn btn-primary btn-sm" href="/quizzes/<%= quiz.slug %>">Start quiz</a>
+          </li>
+        <% }); %>
+      </ul>
+    </section>
+  <% } %>
+
   <div class="page-actions">
     <a class="btn btn-secondary" href="/modules">Back to modules</a>
   </div>

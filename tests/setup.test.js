@@ -125,29 +125,15 @@ test('a registered account cannot repeat setup', async () => {
 });
 
 test('no mojibake sequences in source files', async () => {
-  const fs = require('node:fs');
-  const path = require('node:path');
-  const root = process.cwd();
-  const moji = /â€|Â |Ã[©¨¢]|�|ï»¿/;
-  let bad = [];
-  function walk(dir) {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) { walk(full); continue; }
-      if (!/\.(ejs|js|css|md)$/.test(entry.name)) continue;
-      if (full.includes('node_modules')) continue;
-      if (full.endsWith('setup.test.js')) continue;
-      const s = fs.readFileSync(full, 'utf8');
-      for (const line of s.split('\n')) {
-        if (moji.test(line)) bad.push(`${full}: ${line.trim().slice(0,80)}`);
-      }
-    }
-  }
-  walk(path.join(root, 'src'));
-  walk(path.join(root, 'public'));
-  walk(path.join(root, 'scripts'));
-  walk(path.join(root, 'tests'));
-  assert.equal(bad.length, 0, 'Mojibake sequences found in source:\n' + bad.join('\n'));
+  // The detection rule lives in scripts/check-encoding.js so the test and
+  // `npm run check:encoding` can never drift apart. It reports the exact byte
+  // sequence of every hit, which is what identifies the encoding accident.
+  const { scan } = require('../scripts/check-encoding');
+  const hits = scan();
+  const report = hits
+    .map((hit) => `${hit.file}:${hit.line}:${hit.column}  ${hit.bytes}  (${hit.codePoints})\n    ${hit.text}`)
+    .join('\n');
+  assert.equal(hits.length, 0, 'Mojibake sequences found in source:\n' + report);
 });
 test('setup requires a CSRF token', async () => {
   const { app, db, config } = createContext();

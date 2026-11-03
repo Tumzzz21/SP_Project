@@ -4,6 +4,7 @@ const express = require('express');
 
 const { AppError } = require('../errors');
 const attemptsDb = require('../db/attempts');
+const { reviewAnswers } = require('../review');
 const { readFlash } = require('../flash');
 const { parseIdParam } = require('../validation');
 
@@ -51,7 +52,10 @@ function createAdminAttemptRoutes({ db }) {
     const attempt = id ? attemptsDb.findForAdmin(db, id) : null;
     if (!attempt) return next(new AppError(404, 'That attempt was not found.', { code: 'attempt_not_found' }));
 
-    const answers = attempt.status === 'submitted' ? attemptsDb.answersForReview(db, attempt.id) : [];
+    const answers =
+      attempt.status === 'submitted'
+        ? reviewAnswers(db, attempt.quizId, attemptsDb.answersForReview(db, attempt.id))
+        : [];
     const percentage =
       attempt.maxPoints > 0
         ? Math.round((attempt.scorePoints * 100) / attempt.maxPoints)

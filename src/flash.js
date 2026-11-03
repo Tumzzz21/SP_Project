@@ -118,6 +118,33 @@ const FLASH_MESSAGES = {
     type: 'success',
     message: 'Quiz version retired. Existing attempt history is unchanged.',
   },
+  quiz_restored: {
+    type: 'success',
+    message: 'Quiz version restored to the active catalogue.',
+  },
+  quiz_deleted: {
+    type: 'success',
+    message: 'Archived quiz version deleted. No student attempts were attached to it.',
+  },
+  quiz_has_attempts: {
+    type: 'error',
+    message:
+      'This quiz version has student attempts and cannot be deleted. Keep it archived to preserve their history.',
+  },
+  quiz_not_archived: {
+    type: 'error',
+    message: 'Only archived quiz versions can be restored or deleted.',
+  },
+  quiz_restore_invalid: {
+    type: 'error',
+    message:
+      'This archived version cannot be published again because its question set is incomplete. Create a new version instead.',
+  },
+  quiz_restore_unsafe: {
+    type: 'error',
+    message:
+      'This archived version has student attempts and cannot be made editable again. Create a new version instead.',
+  },
   quiz_version_created: {
     type: 'success',
     message: 'New draft version created from the published one. Edit it, then publish.',

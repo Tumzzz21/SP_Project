@@ -47,7 +47,7 @@
                   <div class="meter" aria-label="<%= m.progress.percent %>% complete">
                     <progress class="meter-fill" value="<%= m.progress.percent %>" max="100" aria-hidden="true"></progress>
                   </div>
-                  <span class="module-row-progress-text"><%= m.progress.completed %> of <%= m.progress.total %> item<%= m.progress.total === 1 ? "" : "s" %></span>
+                  <span class="module-row-progress-text"><%= m.progress.completed %> of <%= m.progress.total %> item<%= m.progress.total === 1 ? "" : "s" %><% if (m.quizzes && m.quizzes.length > 0) { %> · <%= m.quizzes.length %> quiz<%= m.quizzes.length === 1 ? "" : "zes" %><% } %></span>
                 </div>
                 <span class="module-status-chip module-status-chip--<%= statusClass %>"><%= statusLabel %></span>
                 <% if (user && user.role === 'admin') { %>
@@ -63,28 +63,36 @@
           </div>
           <div class="module-row-items" hidden>
             <ul class="module-row-item-list">
-              <% if (m.items && m.items.length === 0) { %>
+              <% const quizCount = (m.quizzes || []).length; %>
+              <% if ((!m.items || m.items.length === 0) && quizCount === 0) { %>
                 <li class="module-row-item muted">No items yet.</li>
-              <% } else if (m.items) { %>
-                <% m.items.forEach(function (item, idx) { %>
-                  <li class="module-row-item">
-                    <span class="module-row-item-icon">
-                      <% if (item.type === 'page') { %><%- include('../partials/icon', { name: 'lessons', size: 16 }) %>
-                      <% } else if (item.type === 'file') { %><%- include('../partials/icon', { name: 'progress', size: 16 }) %>
-                      <% } else if (item.type === 'link') { %><%- include('../partials/icon', { name: 'arrow', size: 16 }) %>
-                      <% } else if (item.type === 'quiz') { %><%- include('../partials/icon', { name: 'quizzes', size: 16 }) %>
-                      <% } %>
-                    </span>
-                    <a href="/modules/<%= m.id %>#item-<%= item.id %>" class="module-row-item-link"><%= item.title %></a>
-                    <span class="module-row-item-type"><%= item.type %></span>
-                    <% if (item.completed) { %>
-                      <span class="module-row-item-done">Done</span>
-                    <% } else { %>
-                      <span class="module-row-item-open">Open</span>
-                    <% } %>
-                  </li>
-                <% }); %>
               <% } %>
+              <% (m.items || []).forEach(function (item, idx) { %>
+                <li class="module-row-item">
+                  <span class="module-row-item-icon">
+                    <% if (item.type === 'page') { %><%- include('../partials/icon', { name: 'lessons', size: 16 }) %>
+                    <% } else if (item.type === 'file') { %><%- include('../partials/icon', { name: 'progress', size: 16 }) %>
+                    <% } else if (item.type === 'link') { %><%- include('../partials/icon', { name: 'arrow', size: 16 }) %>
+                    <% } else if (item.type === 'quiz') { %><%- include('../partials/icon', { name: 'quizzes', size: 16 }) %>
+                    <% } %>
+                  </span>
+                  <a href="/modules/<%= m.id %>#item-<%= item.id %>" class="module-row-item-link"><%= item.title %></a>
+                  <span class="module-row-item-type"><%= item.type %></span>
+                  <% if (item.completed) { %>
+                    <span class="module-row-item-done">Done</span>
+                  <% } else { %>
+                    <span class="module-row-item-open">Open</span>
+                  <% } %>
+                </li>
+              <% }); %>
+              <% (m.quizzes || []).forEach(function (quiz) { %>
+                <li class="module-row-item">
+                  <span class="module-row-item-icon"><%- include('../partials/icon', { name: 'quizzes', size: 16 }) %></span>
+                  <a href="/quizzes/<%= quiz.slug %>" class="module-row-item-link" data-module-quiz="<%= quiz.slug %>"><%= quiz.title %></a>
+                  <span class="module-row-item-type">quiz</span>
+                  <span class="module-row-item-open">Start</span>
+                </li>
+              <% }); %>
             </ul>
           </div>
         </div>
