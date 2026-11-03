@@ -1315,3 +1315,16 @@ test('admin actions leave a visible confirmation across the redirect', async () 
     .filter((cookie) => cookie.startsWith('cybersafe.flash='));
   assert.ok(clearing.some((cookie) => cookie.endsWith('cybersafe.flash=')), 'the cookie is cleared after use');
 });
+
+test('draft modules sink to the bottom of the module list for admins', async () => {
+  const { app, db, adminAuth } = setupRoles();
+  const modulesDb = require('../src/db/modules');
+  seedContent(db); // published "Test module"
+  modulesDb.createModule(db, { title: 'Zzz hidden module', status: 'hidden' });
+  modulesDb.createModule(db, { title: 'Zzz draft module', status: 'draft' });
+
+  const page = await request(app).get('/modules').set('Cookie', adminAuth.cookie);
+  assert.equal(page.status, 200);
+  const order = [...page.text.matchAll(/class="module-row-title">([^<]+)</g)].map((match) => match[1]);
+  assert.deepEqual(order, ['Test module', 'Zzz hidden module', 'Zzz draft module']);
+});

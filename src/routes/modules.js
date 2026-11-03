@@ -13,12 +13,16 @@ const quizzesDb = require('../db/quizzes');
 function createModuleRoutes({ db }) {
   const router = express.Router();
 
-  // List published modules
+  // List published modules. Admins also see hidden and draft modules, but
+  // drafts always sink to the bottom so unfinished work never tops the list.
   router.get('/modules', requireActive, (req, res) => {
-    const mods = req.user && req.user.role === 'admin'
-      ? modulesDb.listForAdmin(db)
-      : modulesDb.listPublished(db);
-    const withProgress = mods.map(m => ({
+    const isAdmin = Boolean(req.user && req.user.role === 'admin');
+    const mods = isAdmin ? modulesDb.listForAdmin(db) : modulesDb.listPublished(db);
+    const statusRank = { published: 0, hidden: 1, draft: 2 };
+    const ordered = isAdmin
+      ? [...mods].sort((a, b) => (statusRank[a.status] ?? 3) - (statusRank[b.status] ?? 3))
+      : mods;
+    const withProgress = ordered.map(m => ({
       ...m,
       items: modulesDb.moduleProgress(db, req.user.id, m.id),
       quizzes: quizzesDb.listPublishedForModule(db, m.id),
