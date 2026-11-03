@@ -1148,12 +1148,20 @@ test('a module can be created with its first handout in one submit', async () =>
     .attach('file', pdf, { filename: 'phishing.pdf', contentType: 'application/pdf' });
 
   assert.equal(response.status, 303, response.text);
-  assert.match(response.headers.location, /notice=file_uploaded$/);
-  const moduleId = Number(/\/admin\/modules\/(\d+)/.exec(response.headers.location)[1]);
+  assert.equal(response.headers.location, '/admin/modules?notice=module_created_with_file');
 
-  const mod = db.prepare('SELECT * FROM modules WHERE id = ?').get(moduleId);
+  // The admin lands back on the module list, so find the row by title.
+  const mod = db.prepare('SELECT * FROM modules WHERE title = ?').get('Phishing awareness');
+  const moduleId = mod.id;
   assert.equal(mod.title, 'Phishing awareness');
   assert.equal(mod.status, 'published', 'status chosen in the form is applied');
+
+  // The list confirms the creation and shows the new module.
+  const listPage = await request(app)
+    .get('/admin/modules?notice=module_created_with_file')
+    .set('Cookie', adminAuth.cookie);
+  assert.match(listPage.text, /first handout attached/);
+  assert.match(listPage.text, /Phishing awareness/);
 
   const item = db.prepare('SELECT * FROM module_items WHERE module_id = ?').get(moduleId);
   assert.equal(item.type, 'file');

@@ -16,7 +16,15 @@ function findById(db, id) {
 }
 
 function listForAdmin(db) {
-  return db.prepare('SELECT * FROM modules ORDER BY sort_order, id').all();
+  return db
+    .prepare(
+      `SELECT m.*, COUNT(mi.id) AS item_count
+         FROM modules m
+         LEFT JOIN module_items mi ON mi.module_id = m.id
+        GROUP BY m.id
+        ORDER BY m.sort_order, m.id`,
+    )
+    .all();
 }
 
 function listPublished(db) {

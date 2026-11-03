@@ -186,7 +186,11 @@ const FLASH_MESSAGES = {
     message: 'That file content is not a valid PDF, image, or Office document.',
   },  module_created: {
     type: 'success',
-    message: 'Module created. Upload a file or publish it when ready.',
+    message: 'Module created. It is listed below — open it to add more content.',
+  },
+  module_created_with_file: {
+    type: 'success',
+    message: 'Module created with its first handout attached. It is listed below.',
   },
   updated: {
     type: 'success',
